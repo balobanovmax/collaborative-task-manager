@@ -1,0 +1,94 @@
+My Goals
+
+I am making this project because I love the idea of a collaborative to do list application. A regular To-Do list has been implemented countless amounts of times by many students. But my to-do list will stand out because it will have rooms and people will be able to join a room and collaborate on a single to-do list, and also have a chat.
+This project is for students who want to stay on track together. For example, if a team of students works on a coding project and then want to keep track of everything they do, they make a to-do list where people can add and delete the tasks and it will be visible for every user. 
+What’s gonna make it valuable is the fact that you can collaborate on a list tracker TOGETHER with other people which would help a team stay organized.
+
+User Stories
+As a user, I would like to be able to register for an account with my details, profile picture and name to be able to then collaborate with other people. 
+As a user, I would like to be able to join a group so that I can collaborate with others and work on the same to-do list with other people.
+As a user, I would like to create my own groups and invite other people to join my groups so we can work on our own to do list together.
+As a user, I want to be able to modify my account details, like my profile picture. 
+As a user, I would like to be able to change and recover my password.
+As a user, I would like to have a list of groups that I have joined conveniently displayed for me for easy access. (‘joined groups’)
+As a user, I would like ot have a lsit of groups that I have created and am an owner of. (‘my groups’)
+As a user, I would like to be able to add new tasks in a to-do list, modify the tasks, and delete the tasks, and check them as done. 
+As a user, I would like to be able to leave the groups I no longer want to be a part of. 
+As a user, I want to be able to delete my own group.
+As an owner of a group, I would like to be able to change the group’s name and kick members. 
+As a user, I would like to be able to either accept or reject a person that wants to join a group
+As a user, I want to make the group either public or private. Public means everyone who knows the name/group id can join without sending a request, private means that you need to know the password to join.
+
+Data Models
+Here is the data that my group is gonna have:
+1. User Data Model
+This model will store all the information about each user in your system.
+Table: users
+Attributes:
+id (Primary Key, Integer): A unique identifier for each user.
+username (String): A unique username for the user. This is what they'll use to log in.
+email (String): The user's email address. It should be unique and will be used for account recovery.
+password_hash (String): A secure, hashed version of the user's password. Never store plain passwords.
+profile_picture_url (String, nullable): The URL to the user's profile picture. This can be empty.
+bio (String, nullable): A short description about the user.
+created_at (Timestamp): The date and time the user account was created.
+I can also create a separate table that will contain like a profile information for each user, like bio, profile pic, etc.
+Relationships:
+A user can own many groups.
+A user can belong to many groups.
+A user can own many tasks.
+
+2. Group Data Model
+This model represents the collaborative "rooms" where users work together.
+Table: groups
+Attributes:
+id (Primary Key, Integer): A unique identifier for the group.
+name (String): The name of the group.
+owner_id (Integer): A Foreign Key referencing the id in the users table. This identifies the creator of the group.
+is_public (Boolean): A flag to determine if the group is public or private.
+join_password (String, nullable): If the group is private, a hashed password to join.
+created_at (Timestamp): The date and time the group was created.
+description (String, nullable): A description of the group's purpose.
+Relationships:
+A group has one owner.
+A group has many members (users).
+A group has many tasks.
+A group has many resources (links, files, etc. if you add them later).
+
+3. Task Data Model
+This model stores the individual to-do items within each group.
+Table: tasks
+Attributes:
+id (Primary Key, Integer): A unique identifier for the task.
+group_id (Integer): A Foreign Key referencing the id in the groups table. This links the task to its group.
+description (String): The text content of the to-do item.
+is_completed (Boolean): A flag to mark the task as done.
+created_at (Timestamp): The date and time the task was created.
+assigned_to_user_id (Integer, nullable): A Foreign Key referencing a user. This allows you to assign tasks to a specific person.
+Relationships:
+A task belongs to one group.
+A task can be assigned to one user.
+
+4. Intermediate (Join) Models
+These models are crucial for managing the many-to-many relationships in your application. .
+Group Members
+This table links users to the groups they belong to. A user can be in many groups, and a group can have many users.
+Table: group_members
+Attributes:
+user_id (Integer): A Foreign Key referencing users.id.
+group_id (Integer): A Foreign Key referencing groups.id.
+joined_at (Timestamp): The date and time the user joined the group.
+MVP (Minimum Viable Product)
+
+I will exclude the following: As a user, I would like to be able to either accept or reject a person that wants to join a group
+As a user, I want to make the group either public or private. Public means everyone who knows the name/group id can join without sending a request, private means that you need to know the password to join.
+
+I won’t handle the requestios to join a group and only implement the feature with the password(aka need password to join). Rest stays.
+
+
+4. Tech Stack
+
+Frontend: HTML, CSS, Javascript, Bootstrap 5.
+Backend: Node and express
+NPM packages: will figure out as I go. Will definitely use axios. 
+Database: Postgres
