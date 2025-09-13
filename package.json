@@ -2,6 +2,7 @@
   "name": "collaborative-task-manager",
   "version": "1.0.0",
   "description": "A collaborative to-do list application where teams can work together on shared task lists",
+  "type": "module",
   "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
