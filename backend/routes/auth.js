@@ -1,5 +1,6 @@
 import express from 'express';
 import { createUser, verifyUserPassword, emailExists, usernameExists } from '../models/User.js';
+import { generateToken } from '../config/jwt.js';
 
 const router = express.Router();
 
@@ -85,15 +86,15 @@ router.post('/login', async (req, res) => {
             });
         }
         
-        // TODO: Generate JWT token here (Step 4)
-        // For now, we'll just return the user data
+        // Generate JWT token for authenticated user
+        const token = generateToken(user.id, user.email);
         
-        // Return success response (password_hash is already excluded by verifyUserPassword)
+        // Return success response with token (password_hash is already excluded by verifyUserPassword)
         res.json({
             success: true,
             message: 'Login successful',
-            user: user
-            // TODO: Add token field here in Step 4
+            user: user,
+            token: token
         });
         
     } catch (error) {
