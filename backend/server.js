@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import pool from './config/database.js';
+import authRoutes from './routes/auth.js';
 
 
 const app = express();
@@ -13,6 +14,9 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
+//authentication routes
+app.use('/api/auth', authRoutes);
 
 //text route
 app.get('/', (req, res) => {
