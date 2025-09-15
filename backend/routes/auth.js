@@ -1,6 +1,7 @@
 import express from 'express';
 import { createUser, verifyUserPassword, emailExists, usernameExists } from '../models/User.js';
 import { generateToken } from '../config/jwt.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -162,6 +163,20 @@ router.get('/check-email/:email', async (req, res) => {
             error: 'Failed to check email availability' 
         });
     }
+});
+
+// TEST ROUTE: Protected endpoint to test authentication middleware
+// URL: GET /api/auth/profile (requires valid JWT token)
+router.get('/profile', requireAuth, (req, res) => {
+    // This route is protected - only users with valid JWT tokens can access
+    res.json({
+        message: 'Access granted! You are authenticated.',
+        user: {
+            id: req.userId,
+            email: req.userEmail
+        },
+        tokenData: req.tokenData
+    });
 });
 
 export default router;
