@@ -6,6 +6,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import pool from './config/database.js';
 import authRoutes from './routes/auth.js';
+import groupRoutes from './routes/groups.js';
 
 
 const app = express();
@@ -17,6 +18,9 @@ app.use(express.json());
 
 //authentication routes
 app.use('/api/auth', authRoutes);
+
+//group routes
+app.use('/api/groups', groupRoutes);
 
 //text route
 app.get('/', (req, res) => {
