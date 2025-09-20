@@ -147,6 +147,40 @@ export const findGroupById = async (groupId) => {
 };
 
 /**
+ * Find a group by ID including password hash (internal use only)
+ * @param {number} groupId - The group's ID
+ * @returns {object|null} Group object with password hash or null if not found
+ */
+const findGroupByIdWithPassword = async (groupId) => {
+    try {
+        if (!groupId || typeof groupId !== 'number') {
+            throw new Error('Valid group ID is required');
+        }
+        
+        const query = `
+            SELECT id, name, owner_id, description, is_public, created_at, join_password_hash
+            FROM groups 
+            WHERE id = $1
+        `;
+        
+        const result = await pool.query(query, [groupId]);
+        
+        if (result.rows.length === 0) {
+            return null; // Group not found
+        }
+        
+        return result.rows[0];
+        
+    } catch (error) {
+        if (error.message.includes('Valid group ID')) {
+            throw error;
+        }
+        console.error('Database error in findGroupByIdWithPassword:', error);
+        throw new Error('Failed to find group due to server error');
+    }
+};
+
+/**
  * Check if a group name already exists for a specific owner
  * @param {string} name - Group name to check
  * @param {number} ownerId - Owner's user ID
@@ -188,3 +222,228 @@ export const groupExists = async (groupId) => {
     }
 };
 
+/**
+ * Delete a group (only owner can delete)
+ * @param {number} groupId - The group's ID to delete
+ * @param {number} ownerId - The owner's user ID (for authorization)
+ * @returns {boolean} True if successfully deleted
+ * @throws {Error} If validation fails or database error occurs
+ */
+export const deleteGroup = async (groupId, ownerId) => {
+    try {
+        // Input validation
+        if (!groupId || typeof groupId !== 'number' || groupId <= 0) {
+            throw new Error('Valid group ID is required');
+        }
+        
+        if (!ownerId || typeof ownerId !== 'number' || ownerId <= 0) {
+            throw new Error('Valid owner ID is required');
+        }
+        
+        // Check if group exists and user is the owner
+        const group = await findGroupById(groupId);
+        if (!group) {
+            throw new Error('Group not found');
+        }
+        
+        if (group.owner_id !== ownerId) {
+            throw new Error('Only group owner can delete the group');
+        }
+        
+        // Delete the group (CASCADE will handle group_members and tasks)
+        const query = 'DELETE FROM groups WHERE id = $1 AND owner_id = $2';
+        const result = await pool.query(query, [groupId, ownerId]);
+        
+        if (result.rowCount === 0) {
+            throw new Error('Failed to delete group');
+        }
+        
+        console.log(`Group ${groupId} successfully deleted by owner ${ownerId}`);
+        return true;
+        
+    } catch (error) {
+        console.error('Error deleting group:', error);
+        throw error; // Re-throw to handle in route
+    }
+};
+
+/**
+ * Verify group join password
+ * @param {number} groupId - The group's ID
+ * @param {string} plainPassword - Plain text password to verify
+ * @returns {boolean} True if password is correct or no password required
+ * @throws {Error} If validation fails or database error occurs
+ */
+export const verifyGroupPassword = async (groupId, plainPassword) => {
+    try {
+        // Input validation
+        if (!groupId || typeof groupId !== 'number' || groupId <= 0) {
+            throw new Error('Valid group ID is required');
+        }
+        
+        // Find the group
+        const group = await findGroupByIdWithPassword(groupId);
+        if (!group) {
+            throw new Error('Group not found');
+        }
+        
+        // If group is public, no password needed
+        if (group.is_public) {
+            return true;
+        }
+        
+        // If private group has no join password, allow joining
+        if (!group.join_password_hash) {
+            return true;
+        }
+        
+        // If password is required but not provided
+        if (!plainPassword || typeof plainPassword !== 'string') {
+            throw new Error('Password is required to join this private group');
+        }
+        
+        // Verify password using bcrypt
+        const { comparePassword } = await import('../utils/passwordHash.js');
+        const isValidPassword = await comparePassword(plainPassword, group.join_password_hash);
+        
+        if (!isValidPassword) {
+            throw new Error('Incorrect group password');
+        }
+        
+        return true;
+        
+    } catch (error) {
+        console.error('Error verifying group password:', error);
+        throw error; // Re-throw to handle in route
+    }
+};
+
+/**
+ * Get all groups owned by a specific user
+ * @param {number} ownerId - The owner's user ID
+ * @returns {Array} Array of group objects owned by the user
+ * @throws {Error} If validation fails or database error occurs
+ */
+export const getGroupsByOwner = async (ownerId) => {
+    try {
+        // Input validation
+        if (!ownerId || typeof ownerId !== 'number' || ownerId <= 0) {
+            throw new Error('Valid owner ID is required');
+        }
+        
+        // Check if user exists (optional validation)
+        const { findUserById } = await import('./User.js');
+        const user = await findUserById(ownerId);
+        if (!user) {
+            throw new Error('User not found');
+        }
+        
+        // Query groups owned by the user
+        const query = `
+            SELECT 
+                id, 
+                name, 
+                description, 
+                is_public, 
+                created_at,
+                owner_id
+            FROM groups 
+            WHERE owner_id = $1 
+            ORDER BY created_at DESC
+        `;
+        
+        const result = await pool.query(query, [ownerId]);
+        
+        console.log(`Found ${result.rows.length} groups owned by user ${ownerId}`);
+        return result.rows;
+        
+    } catch (error) {
+        console.error('Error getting groups by owner:', error);
+        throw error; // Re-throw to handle in route
+    }
+};
+
+
+// ===== TESTING getGroupsByOwner (UPDATED) =====
+console.log("\n=== TESTING getGroupsByOwner ===");
+
+// Test 1: Get groups owned by user 7 (should have 1 group)
+console.log("Test 1 - Groups owned by user 7:");
+try {
+    const groups = await getGroupsByOwner(7);
+    console.log("SUCCESS:", groups); // Should return [Study Group]
+    console.log("Number of groups:", groups.length); // Should be 1
+    groups.forEach(group => console.log(`- ${group.name} (ID: ${group.id})`));
+} catch (error) {
+    console.log("ERROR:", error.message);
+}
+
+// Test 2: Get groups owned by user 8 (should have 1 group)
+console.log("Test 2 - Groups owned by user 8:");
+try {
+    const groups = await getGroupsByOwner(8);
+    console.log("SUCCESS:", groups); // Should return [Secret Project]
+    console.log("Number of groups:", groups.length); // Should be 1
+    groups.forEach(group => console.log(`- ${group.name} (ID: ${group.id})`));
+} catch (error) {
+    console.log("ERROR:", error.message);
+}
+
+// Test 3: Get groups owned by user 9 (should have 1 group now, since we deleted group 6)
+console.log("Test 3 - Groups owned by user 9:");
+try {
+    const groups = await getGroupsByOwner(9);
+    console.log("SUCCESS:", groups); // Should return [Minimal Group] only
+    console.log("Number of groups:", groups.length); // Should be 1 (not 2 anymore)
+    groups.forEach(group => console.log(`- ${group.name} (ID: ${group.id})`));
+} catch (error) {
+    console.log("ERROR:", error.message);
+}
+
+// Test 4: Get groups owned by user 10 (should have 1 group)
+console.log("Test 4 - Groups owned by user 10:");
+try {
+    const groups = await getGroupsByOwner(10);
+    console.log("SUCCESS:", groups); // Should return [Study Group]
+    console.log("Number of groups:", groups.length); // Should be 1
+    groups.forEach(group => console.log(`- ${group.name} (ID: ${group.id})`));
+} catch (error) {
+    console.log("ERROR:", error.message);
+}
+
+// Test 5: User with no groups (existing user but no groups)
+console.log("Test 5 - User with no groups (user 11 if exists, or create a user first):");
+try {
+    const groups = await getGroupsByOwner(11); // Assuming user 11 exists but has no groups
+    console.log("SUCCESS:", groups); // Should return []
+    console.log("Number of groups:", groups.length); // Should be 0
+} catch (error) {
+    console.log("ERROR:", error.message); // Might get "User not found" if user 11 doesn't exist
+}
+
+// Test 6: Non-existent user
+console.log("Test 6 - Non-existent user:");
+try {
+    const groups = await getGroupsByOwner(999);
+    console.log("SUCCESS:", groups);
+} catch (error) {
+    console.log("ERROR:", error.message); // Should get "User not found"
+}
+
+// Test 7: Invalid owner ID
+console.log("Test 7 - Invalid owner ID (not a number):");
+try {
+    const groups = await getGroupsByOwner("not-a-number");
+    console.log("SUCCESS:", groups);
+} catch (error) {
+    console.log("ERROR:", error.message); // Should get "Valid owner ID is required"
+}
+
+// Test 8: Invalid owner ID (negative)
+console.log("Test 8 - Invalid owner ID (negative):");
+try {
+    const groups = await getGroupsByOwner(-5);
+    console.log("SUCCESS:", groups);
+} catch (error) {
+    console.log("ERROR:", error.message); // Should get "Valid owner ID is required"
+}
