@@ -1,7 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { createGroup, findGroupById } from '../models/Group.js';
-import { getMemberCount } from '../models/GroupMember.js';
+import { getMemberCount, addUserToGroup } from '../models/GroupMember.js';
 
 const router = express.Router();
 
@@ -104,6 +104,63 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch group details'
+        });
+    }
+});
+
+/**
+ * Join a group
+ * POST /api/groups/:id/join
+ * Body: { password } (optional - only for private groups with passwords)
+ * Auth: Required (user must be logged in)
+ */
+router.post('/:id/join', requireAuth, async (req, res) => {
+    try {
+        // Extract and validate group ID from URL parameter
+        const groupId = parseInt(req.params.id);
+        
+        if (isNaN(groupId) || groupId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid group ID. Must be a positive number.'
+            });
+        }
+        
+        // Get user ID from auth middleware
+        const userId = req.userId;
+        
+        // Extract password from request body (optional)
+        const { password } = req.body;
+        
+        // Use GroupMember model to join the group
+        const result = await addUserToGroup(userId, groupId, password);
+        
+        // Send successful response
+        res.status(201).json({
+            success: true,
+            message: 'Successfully joined group',
+            data: result
+        });
+        
+    } catch (error) {
+        console.error('Error joining group:', error);
+        
+        // Determine appropriate status code based on error message
+        let statusCode = 400; // Default to Bad Request
+        
+        if (error.message.includes('not found')) {
+            statusCode = 404; // Not Found
+        } else if (error.message.includes('already a member')) {
+            statusCode = 409; // Conflict
+        } else if (error.message.includes('Password is required') || 
+                   error.message.includes('Incorrect group password')) {
+            statusCode = 403; // Forbidden
+        }
+        
+        // Send appropriate error response
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
         });
     }
 });
