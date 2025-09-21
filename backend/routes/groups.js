@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { createGroup } from '../models/Group.js';
+import { createGroup, findGroupById } from '../models/Group.js';
+import { getMemberCount } from '../models/GroupMember.js';
 
 const router = express.Router();
 
@@ -51,6 +52,58 @@ router.post('/', requireAuth, async (req, res) => {
         res.status(400).json({
             success: false,
             message: error.message
+        });
+    }
+});
+
+/**
+ * Get group details by ID
+ * GET /api/groups/:id
+ * Auth: Not required (public group info)
+ */
+router.get('/:id', async (req, res) => {
+    try {
+        // Extract and validate group ID from URL parameter
+        const groupId = parseInt(req.params.id);
+        
+        if (isNaN(groupId) || groupId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid group ID. Must be a positive number.'
+            });
+        }
+        
+        // Get group details
+        const group = await findGroupById(groupId);
+        
+        if (!group) {
+            return res.status(404).json({
+                success: false,
+                message: 'Group not found'
+            });
+        }
+        
+        // Get member count for additional info
+        const memberCount = await getMemberCount(groupId);
+        
+        // Send successful response with group details
+        res.json({
+            success: true,
+            data: {
+                group: {
+                    ...group,
+                    member_count: memberCount
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error fetching group details:', error);
+        
+        // Send appropriate error response
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch group details'
         });
     }
 });
