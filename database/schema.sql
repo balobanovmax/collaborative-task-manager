@@ -38,8 +38,13 @@ CREATE TABLE group_members (
 CREATE TABLE tasks (
     id SERIAL PRIMARY KEY,
     group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
-    task_description TEXT NOT NULL,
-    is_completed BOOLEAN DEFAULT false,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    is_completed BOOLEAN DEFAULT FALSE,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    due_date TIMESTAMP,
+    completed_at TIMESTAMP,
+    completed_by INTEGER REFERENCES users(id) ON DELETE SET NULL
 );
 
