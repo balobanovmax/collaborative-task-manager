@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import pool from './config/database.js';
 import authRoutes from './routes/auth.js';
 import groupRoutes from './routes/groups.js';
+import userRoutes from './routes/users.js';
 
 
 const app = express();
@@ -21,6 +22,9 @@ app.use('/api/auth', authRoutes);
 
 //group routes
 app.use('/api/groups', groupRoutes);
+
+//user routes
+app.use('/api/users', userRoutes);
 
 //text route
 app.get('/', (req, res) => {
