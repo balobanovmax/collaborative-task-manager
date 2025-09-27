@@ -230,3 +230,181 @@ export const usernameExists = async (username) => {
     }
 };
 
+/**
+ * Get user's full profile (private - for own profile view)
+ * @param {number} userId - The ID of the user
+ * @returns {Object|null} User profile object with private info or null if not found
+ */
+export const getUserProfile = async (userId) => {
+    try {
+        // Validate input
+        if (!userId || isNaN(userId) || userId <= 0) {
+            throw new Error('Invalid user ID. Must be a positive number.');
+        }
+        
+        // Query to get full profile (including email for own profile)
+        const query = `
+            SELECT 
+                id,
+                username,
+                email,
+                bio,
+                profile_picture_url,
+                created_at
+            FROM users 
+            WHERE id = $1
+        `;
+        
+        const result = await pool.query(query, [userId]);
+        
+        // Return user profile or null if not found
+        if (result.rows.length === 0) {
+            return null;
+        }
+        
+        return result.rows[0];
+        
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        throw error;
+    }
+};
+
+/**
+ * Update user's profile information
+ * @param {number} userId - The ID of the user to update
+ * @param {Object} profileData - Object containing profile fields to update
+ * @param {string} [profileData.bio] - User's bio (optional)
+ * @param {string} [profileData.profile_picture_url] - URL to user's profile picture (optional)
+ * @returns {Object} Updated user profile object
+ */
+export const updateUserProfile = async (userId, profileData) => {
+    try {
+        // Validate user ID
+        if (!userId || isNaN(userId) || userId <= 0) {
+            throw new Error('Invalid user ID. Must be a positive number.');
+        }
+        
+        // Validate that profileData is provided and is an object
+        if (!profileData || typeof profileData !== 'object') {
+            throw new Error('Profile data is required and must be an object.');
+        }
+        
+        // Extract and validate updateable fields
+        const { bio, profile_picture_url } = profileData;
+        
+        // Check that at least one field is being updated
+        if (bio === undefined && profile_picture_url === undefined) {
+            throw new Error('At least one field (bio or profile_picture_url) must be provided for update.');
+        }
+        
+        // Validate bio if provided
+        if (bio !== undefined) {
+            if (typeof bio !== 'string') {
+                throw new Error('Bio must be a string.');
+            }
+            if (bio.length > 500) {
+                throw new Error('Bio cannot exceed 500 characters.');
+            }
+        }
+        
+        // Validate profile_picture_url if provided
+        if (profile_picture_url !== undefined) {
+            if (typeof profile_picture_url !== 'string') {
+                throw new Error('Profile picture URL must be a string.');
+            }
+            if (profile_picture_url.length > 255) {
+                throw new Error('Profile picture URL cannot exceed 255 characters.');
+            }
+            // Basic URL validation (optional but good practice)
+            if (profile_picture_url.trim() !== '' && !profile_picture_url.match(/^https?:\/\/.+/)) {
+                throw new Error('Profile picture URL must be a valid HTTP/HTTPS URL or empty string.');
+            }
+        }
+        
+        // Check if user exists first
+        const userExists = await getUserProfile(userId);
+        if (!userExists) {
+            throw new Error(`User with ID ${userId} not found.`);
+        }
+        
+        // Build dynamic query based on provided fields
+        const fieldsToUpdate = [];
+        const queryValues = [];
+        let paramCounter = 1;
+        
+        if (bio !== undefined) {
+            fieldsToUpdate.push(`bio = $${paramCounter}`);
+            // Convert empty string to NULL for better database semantics
+            queryValues.push(bio.trim() === '' ? null : bio.trim());
+            paramCounter++;
+        }
+        
+        if (profile_picture_url !== undefined) {
+            fieldsToUpdate.push(`profile_picture_url = $${paramCounter}`);
+            // Convert empty string to NULL for better database semantics
+            queryValues.push(profile_picture_url.trim() === '' ? null : profile_picture_url.trim());
+            paramCounter++;
+        }
+        
+        // Add user ID as the last parameter
+        queryValues.push(userId);
+        
+        // Build and execute the update query
+        const query = `
+            UPDATE users 
+            SET ${fieldsToUpdate.join(', ')}
+            WHERE id = $${paramCounter}
+            RETURNING id, username, email, bio, profile_picture_url, created_at
+        `;
+        
+        const result = await pool.query(query, queryValues);
+        
+        // Return updated user profile
+        return result.rows[0];
+        
+    } catch (error) {
+        console.error('Error updating user profile:', error);
+        throw error;
+    }
+};
+
+/**
+ * Get user's public profile (for viewing other users)
+ * @param {number} userId - The ID of the user
+ * @returns {Object|null} User public profile object (no email) or null if not found
+ */
+export const getUserPublicProfile = async (userId) => {
+    try {
+        // Validate input
+        if (!userId || isNaN(userId) || userId <= 0) {
+            throw new Error('Invalid user ID. Must be a positive number.');
+        }
+        
+        // Query to get public profile (excluding email for privacy)
+        const query = `
+            SELECT 
+                id,
+                username,
+                bio,
+                profile_picture_url,
+                created_at
+            FROM users 
+            WHERE id = $1
+        `;
+        
+        const result = await pool.query(query, [userId]);
+        
+        // Return user public profile or null if not found
+        if (result.rows.length === 0) {
+            return null;
+        }
+        
+        return result.rows[0];
+        
+    } catch (error) {
+        console.error('Error fetching user public profile:', error);
+        throw error;
+    }
+};
+
