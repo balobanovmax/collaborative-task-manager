@@ -1,7 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { createGroup, findGroupById } from '../models/Group.js';
-import { getMemberCount, addUserToGroup } from '../models/GroupMember.js';
+import { createGroup, findGroupById, deleteGroup } from '../models/Group.js';
+import { getMemberCount, addUserToGroup, getGroupMembers, removeUserFromGroup } from '../models/GroupMember.js';
 
 const router = express.Router();
 
@@ -165,5 +165,159 @@ router.post('/:id/join', requireAuth, async (req, res) => {
     }
 });
 
+/**
+ * Get group members
+ * GET /api/groups/:id/members
+ * Auth: Not required (public group info)
+ */
+router.get('/:id/members', async (req, res) => {
+    try {
+        // Extract and validate group ID from URL parameter
+        const groupId = parseInt(req.params.id);
+        
+        if (isNaN(groupId) || groupId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid group ID. Must be a positive number.'
+            });
+        }
+        
+        // Check if group exists first
+        const group = await findGroupById(groupId);
+        
+        if (!group) {
+            return res.status(404).json({
+                success: false,
+                message: 'Group not found'
+            });
+        }
+        
+        // Get all group members with their details
+        const members = await getGroupMembers(groupId);
+        
+        // Send successful response with member list
+        res.json({
+            success: true,
+            data: {
+                group_id: groupId,
+                group_name: group.name,
+                members: members,
+                total_members: members.length
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error fetching group members:', error);
+        
+        // Send appropriate error response
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch group members'
+        });
+    }
+});
+
+/**
+ * Leave a group
+ * DELETE /api/groups/:id/leave
+ * Auth: Required (user must be logged in)
+ */
+router.delete('/:id/leave', requireAuth, async (req, res) => {
+    try {
+        // Extract and validate group ID from URL parameter
+        const groupId = parseInt(req.params.id);
+        
+        if (isNaN(groupId) || groupId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid group ID. Must be a positive number.'
+            });
+        }
+        
+        // Get user ID from auth middleware
+        const userId = req.userId;
+        
+        // Use GroupMember model to remove user from group
+        const result = await removeUserFromGroup(userId, groupId);
+        
+        // Send successful response
+        res.json({
+            success: true,
+            message: 'Successfully left the group',
+            data: result
+        });
+        
+    } catch (error) {
+        console.error('Error leaving group:', error);
+        
+        // Determine appropriate status code based on error message
+        let statusCode = 400; // Default to Bad Request
+        
+        if (error.message.includes('not found')) {
+            statusCode = 404; // Not Found
+        } else if (error.message.includes('not a member')) {
+            statusCode = 409; // Conflict
+        } else if (error.message.includes('cannot remove the group owner')) {
+            statusCode = 403; // Forbidden
+        }
+        
+        // Send appropriate error response
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Delete a group
+ * DELETE /api/groups/:id
+ * Auth: Required (only group owner can delete)
+ */
+router.delete('/:id', requireAuth, async (req, res) => {
+    try {
+        // Extract and validate group ID from URL parameter
+        const groupId = parseInt(req.params.id);
+        
+        if (isNaN(groupId) || groupId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid group ID. Must be a positive number.'
+            });
+        }
+        
+        // Get user ID from auth middleware
+        const ownerId = req.userId;
+        
+        // Use Group model to delete the group (with owner validation)
+        const result = await deleteGroup(groupId, ownerId);
+        
+        // Send successful response
+        res.json({
+            success: true,
+            message: 'Group deleted successfully',
+            data: result
+        });
+        
+    } catch (error) {
+        console.error('Error deleting group:', error);
+        
+        // Determine appropriate status code based on error message
+        let statusCode = 400; // Default to Bad Request
+        
+        if (error.message.includes('not found')) {
+            statusCode = 404; // Not Found
+        } else if (error.message.includes('not authorized') || 
+                   error.message.includes('Only the group owner')) {
+            statusCode = 403; // Forbidden
+        }
+        
+        // Send appropriate error response
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 export default router;
-//eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjE2LCJpYXQiOjE3NTg0MDY0MDgsImVtYWlsIjoidXNlcjFAZXhhbXBsZS5jb20iLCJleHAiOjE3NTkwMTEyMDh9.VrUi87sybuzI3vzvFY0T7lrvk49Sr5lX12gWZidO2KI
