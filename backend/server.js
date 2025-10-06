@@ -8,6 +8,7 @@ import pool from './config/database.js';
 import authRoutes from './routes/auth.js';
 import groupRoutes from './routes/groups.js';
 import userRoutes from './routes/users.js';
+import taskRoutes from './routes/tasks.js';
 
 
 const app = express();
@@ -25,6 +26,9 @@ app.use('/api/groups', groupRoutes);
 
 //user routes
 app.use('/api/users', userRoutes);
+
+//task routes
+app.use('/api/tasks', taskRoutes);
 
 //text route
 app.get('/', (req, res) => {
