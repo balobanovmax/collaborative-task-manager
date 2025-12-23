@@ -1,0 +1,167 @@
+
+.container {
+  min-height: 100vh;
+  background-color: #F5F5F5;
+  padding-top: 80px;
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.welcomeSection {
+  margin-bottom: 40px;
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  font-size: 18px;
+  color: #555555;
+}
+
+.profileCard {
+  background-color: #FFFFFF;
+  padding: 30px;
+  border-radius: 8px;
+  border: 1px solid #E0E0E0;
+  margin-bottom: 40px;
+}
+
+.cardTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 20px;
+}
+
+.profileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.infoRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.infoLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: #666666;
+  min-width: 100px;
+}
+
+.infoValue {
+  font-size: 14px;
+  color: #333333;
+}
+
+.actionsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.actionCard {
+  background-color: #FFFFFF;
+  padding: 30px;
+  border-radius: 8px;
+  border: 2px solid #E0E0E0;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+}
+
+.actionCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.actionPrimary {
+  border-color: #4A90E2;
+}
+
+.actionPrimary:hover {
+  background-color: #E3F2FD;
+}
+
+.actionSuccess {
+  border-color: #5CB85C;
+}
+
+.actionSuccess:hover {
+  background-color: #E8F5E9;
+}
+
+.actionInfo {
+  border-color: #4A90E2;
+}
+
+.actionInfo:hover {
+  background-color: #E3F2FD;
+}
+
+.actionSecondary {
+  border-color: #6C757D;
+}
+
+.actionSecondary:hover {
+  background-color: #F5F5F5;
+}
+
+.actionIcon {
+  font-size: 48px;
+  margin-bottom: 15px;
+}
+
+.actionTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 8px;
+}
+
+.actionDescription {
+  font-size: 14px;
+  color: #666666;
+}
+
+.notification {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #E8F5E9;
+  color: #2E7D32;
+  padding: 15px 30px;
+  border-radius: 4px;
+  border-left: 4px solid #5CB85C;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    bottom: -50px;
+    opacity: 0;
+  }
+  to {
+    bottom: 30px;
+    opacity: 1;
+  }
+}
+

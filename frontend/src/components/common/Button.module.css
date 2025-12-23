@@ -1,0 +1,66 @@
+
+.btnPrimary,
+.btnSecondary,
+.btnDanger,
+.btnSuccess {
+  padding: 8px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  border: none;
+}
+
+.btnPrimary:disabled,
+.btnSecondary:disabled,
+.btnDanger:disabled,
+.btnSuccess:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
+.btnPrimary {
+  background-color: #4A90E2;
+  color: white;
+  border: none;
+}
+
+.btnPrimary:hover {
+  background-color: #357ABD;
+}
+
+
+.btnSecondary {
+  background-color: white;
+  color: #6C757D;
+  border: 1px solid #6C757D;
+}
+
+.btnSecondary:hover {
+  background-color: #F5F5F5;
+}
+
+
+.btnDanger {
+  background-color: #E74C3C;
+  color: white;
+  border: none;
+}
+
+.btnDanger:hover {
+  background-color: #C0392B;
+}
+
+
+.btnSuccess {
+  background-color: #5CB85C;
+  color: white;
+  border: none;
+}
+
+.btnSuccess:hover {
+  background-color: #4CAE4C;
+}
+

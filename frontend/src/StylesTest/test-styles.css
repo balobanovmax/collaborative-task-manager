@@ -1,0 +1,290 @@
+/* ===================================
+   COLOR SCHEME TEST
+   Clean & Simple Design
+   =================================== */
+
+/* Global Styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background-color: #FFFFFF;
+  color: #333333;
+  line-height: 1.6;
+  margin: 0;
+  padding: 0;
+}
+
+.test-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.test-section {
+  margin-bottom: 40px;
+  padding: 30px;
+  background-color: #F5F5F5;
+  border-radius: 8px;
+}
+
+.test-section h2 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #E0E0E0;
+  padding-bottom: 10px;
+}
+
+/* ===================================
+   BUTTONS
+   =================================== */
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-primary {
+  background-color: #4A90E2;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #357ABD;
+}
+
+.btn-danger {
+  background-color: #E74C3C;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #C0392B;
+}
+
+.btn-success {
+  background-color: #5CB85C;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #4CAE4C;
+}
+
+.btn-secondary {
+  background-color: white;
+  color: #6C757D;
+  border: 1px solid #6C757D;
+}
+
+.btn-secondary:hover {
+  background-color: #F5F5F5;
+}
+
+/* ===================================
+   FORMS
+   =================================== */
+
+.form-container {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  border: 1px solid #E0E0E0;
+  max-width: 400px;
+  margin-bottom: 20px;
+}
+
+.form-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #E0E0E0;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #4A90E2;
+}
+
+.form-input::placeholder {
+  color: #999999;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #E0E0E0;
+  border-radius: 4px;
+  box-sizing: border-box;
+  resize: vertical;
+  min-height: 100px;
+  font-family: inherit;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #4A90E2;
+}
+
+.form-button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.form-button-primary {
+  background-color: #4A90E2;
+  color: white;
+}
+
+.form-button-primary:hover {
+  background-color: #357ABD;
+}
+
+.form-button-secondary {
+  background-color: white;
+  color: #6C757D;
+  border: 1px solid #6C757D;
+}
+
+.form-button-secondary:hover {
+  background-color: #F5F5F5;
+}
+
+/* ===================================
+   CARDS (Tasks, Groups)
+   =================================== */
+
+.card {
+  background-color: white;
+  padding: 20px;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 10px;
+}
+
+.card-text {
+  font-size: 14px;
+  color: #555555;
+  margin-bottom: 10px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+/* Task States */
+.card-completed {
+  background-color: #E8F5E9;
+  border-left: 4px solid #5CB85C;
+}
+
+.card-owned {
+  background-color: #E3F2FD;
+  border-left: 4px solid #4A90E2;
+}
+
+/* ===================================
+   TEXT STYLES
+   =================================== */
+
+.text-heading {
+  font-size: 32px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 10px;
+}
+
+.text-subheading {
+  font-size: 18px;
+  color: #555555;
+  margin-bottom: 20px;
+}
+
+.text-body {
+  font-size: 16px;
+  color: #555555;
+}
+
+.text-muted {
+  font-size: 14px;
+  color: #999999;
+}
+
+/* ===================================
+   STATUS MESSAGES
+   =================================== */
+
+.message {
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.message-error {
+  background-color: #FFEBEE;
+  color: #C0392B;
+  border-left: 4px solid #E74C3C;
+}
+
+.message-success {
+  background-color: #E8F5E9;
+  color: #2E7D32;
+  border-left: 4px solid #5CB85C;
+}
+
+.message-info {
+  background-color: #E3F2FD;
+  color: #1976D2;
+  border-left: 4px solid #4A90E2;
+}
+
