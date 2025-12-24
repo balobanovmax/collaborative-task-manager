@@ -21,22 +21,13 @@ function SignUpForm() {
     setIsLoading(true);
 
     try {
-      // Step 1: Register the user
       await authAPI.register(username, email, password);
-      
-      // Step 2: Automatically log them in
       const loginResponse = await authAPI.login(email, password);
-      
-      // Step 3: Store token and user data
       setAuthToken(loginResponse.token);
       setUser(loginResponse.user);
-      
-      // Step 4: Navigate to dashboard with success message (replace history)
       navigate('/dashboard', { state: { message: 'Account created successfully! Welcome!' }, replace: true });
-      
     } catch (error) {
       setIsLoading(false);
-      
       if (error.response && error.response.data && error.response.data.error) {
         setErrorMessage(error.response.data.error);
       } else {

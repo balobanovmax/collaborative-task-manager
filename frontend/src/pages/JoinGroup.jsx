@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
-import styles from './Login.module.css';
-import LoginForm from '../components/auth/LoginForm';
+import styles from './JoinGroup.module.css';
+import JoinGroupForm from '../components/groups/JoinGroupForm';
 import Navbar from '../components/common/Navbar';
 
-function Login() {
+function JoinGroup() {
   const navigate = useNavigate();
 
   const handleBack = () => {
-    navigate('/');
+    navigate('/dashboard');
   };
 
   return (
@@ -19,12 +19,12 @@ function Login() {
         </button>
         
         <div className={styles.content}>
-          <LoginForm />
+          <JoinGroupForm />
         </div>
       </div>
     </>
   );
 }
 
-export default Login;
+export default JoinGroup;
 

@@ -16,30 +16,22 @@ function LoginForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Clear previous errors
+
     setErrorMessage('');
     setIsLoading(true);
 
     try {
-      // Call backend API
+
       const response = await authAPI.login(email, password);
-      
-      // Store token and user data in localStorage
       setAuthToken(response.token);
       setUser(response.user);
-      
-      // Navigate to dashboard with success message (replace history)
       navigate('/dashboard', { state: { message: 'Logged in successfully.' }, replace: true });
       
     } catch (error) {
-      // Handle errors
       setIsLoading(false);
-      
       if (error.response && error.response.data && error.response.data.error) {
-        // Backend returned an error message
         setErrorMessage(error.response.data.error);
       } else {
-        // Network or other error
         setErrorMessage('Login failed. Please try again.');
       }
     }

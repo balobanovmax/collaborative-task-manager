@@ -367,14 +367,14 @@ export const getUserGroups = async (userId) => {
         
         // Transform the results to clean objects
         const userGroups = result.rows.map(row => ({
-            group_id: row.group_id,
-            group_name: row.group_name,
+            id: row.group_id,
+            name: row.group_name,
             description: row.description,
             is_public: row.is_public,
             is_owner: row.is_owner,
             member_count: parseInt(row.member_count),
             joined_at: row.joined_at,
-            group_created_at: row.group_created_at,
+            created_at: row.group_created_at,
             owner_id: row.owner_id
         }));
         

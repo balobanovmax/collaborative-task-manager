@@ -1,17 +1,28 @@
-
 .container {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background-color: #FFFFFF;
-  padding: 20px;
+  min-height: calc(100vh - 70px);
+  background-color: #F5F5F5;
+  margin-top: 70px;
+  padding: 40px 20px;
 }
 
-.backButtonContainer {
+.backButton {
+  background-color: white;
+  color: #6C757D;
+  border: 1px solid #6C757D;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
   max-width: 1200px;
-  width: 100%;
-  margin: 0 auto;
-  margin-bottom: 20px;
+  margin: 0 auto 30px;
+  display: block;
+}
+
+.backButton:hover {
+  background-color: #f8f9fa;
 }
 
 .content {

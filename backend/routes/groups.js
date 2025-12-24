@@ -37,7 +37,8 @@ router.post('/', requireAuth, async (req, res) => {
         );
         
         // Automatically add the group creator as a member
-        await addUserToGroup(ownerId, newGroup.id);
+        // Pass the password so creator can join their own private group
+        await addUserToGroup(ownerId, newGroup.id, join_password);
         
         // Send success response
         res.status(201).json({

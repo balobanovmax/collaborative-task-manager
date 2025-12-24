@@ -341,15 +341,20 @@ export const getGroupsByOwner = async (ownerId) => {
         // Query groups owned by the user
         const query = `
             SELECT 
-                id, 
-                name, 
-                description, 
-                is_public, 
-                created_at,
-                owner_id
-            FROM groups 
-            WHERE owner_id = $1 
-            ORDER BY created_at DESC
+                g.id, 
+                g.name, 
+                g.description, 
+                g.is_public, 
+                g.created_at,
+                g.owner_id,
+                (
+                    SELECT COUNT(*) 
+                    FROM group_members gm 
+                    WHERE gm.group_id = g.id
+                ) as member_count
+            FROM groups g
+            WHERE g.owner_id = $1 
+            ORDER BY g.created_at DESC
         `;
         
         const result = await pool.query(query, [ownerId]);

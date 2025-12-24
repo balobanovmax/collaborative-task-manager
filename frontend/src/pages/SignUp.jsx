@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import styles from './SignUp.module.css';
 import SignUpForm from '../components/auth/SignUpForm';
-import Button from '../components/common/Button';
+import Navbar from '../components/common/Navbar';
 
 function SignUp() {
   const navigate = useNavigate();
@@ -11,17 +11,18 @@ function SignUp() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.backButtonContainer}>
-        <Button variant="secondary" onClick={handleBack}>
+    <>
+      <Navbar />
+      <div className={styles.container}>
+        <button onClick={handleBack} className={styles.backButton}>
           ← Back
-        </Button>
+        </button>
+        
+        <div className={styles.content}>
+          <SignUpForm />
+        </div>
       </div>
-      
-      <div className={styles.content}>
-        <SignUpForm />
-      </div>
-    </div>
+    </>
   );
 }
 

@@ -1,0 +1,203 @@
+.container {
+  min-height: calc(100vh - 70px);
+  padding: 40px 20px;
+  background-color: #F5F5F5;
+  margin-top: 70px;
+  box-sizing: border-box;
+}
+
+.backButton {
+  background-color: white;
+  color: #6C757D;
+  border: 1px solid #6C757D;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  max-width: 1200px;
+  margin: 0 auto 30px;
+  display: block;
+}
+
+.backButton:hover {
+  background-color: #f8f9fa;
+}
+
+
+
+.pageTitle {
+  font-size: 32px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0 auto 30px;
+  max-width: 1200px;
+  text-align: left;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 16px;
+  color: #7f8c8d;
+}
+
+.errorMessage {
+  max-width: 1200px;
+  margin: 0 auto 20px;
+  background-color: #FFEBEE;
+  color: #C0392B;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: 4px solid #E74C3C;
+  font-size: 14px;
+}
+
+.groupsContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section {
+  margin-bottom: 40px;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333333;
+  margin-bottom: 15px;
+}
+
+.groupsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.groupCardOwner,
+.groupCardMember {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 2px solid transparent;
+}
+
+.groupCardOwner {
+  border-color: #4A90E2;
+}
+
+.groupCardMember {
+  border-color: #27AE60;
+}
+
+.groupCardOwner:hover,
+.groupCardMember:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.groupName {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0 0 8px 0;
+}
+
+.groupDescription {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin: 0 0 15px 0;
+  line-height: 1.4;
+}
+
+.groupMeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.groupCardOwner .badge {
+  background-color: #E3F2FD;
+  color: #4A90E2;
+}
+
+.groupCardMember .badge {
+  background-color: #E8F5E9;
+  color: #27AE60;
+}
+
+.memberCount {
+  font-size: 13px;
+  color: #7f8c8d;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  background-color: white;
+  border-radius: 8px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.emptyState p {
+  font-size: 16px;
+  color: #7f8c8d;
+  margin-bottom: 20px;
+}
+
+.joinButton {
+  background-color: #4A90E2;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.joinButton:hover {
+  background-color: #357ABD;
+}
+
+.notification {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #E8F5E9;
+  color: #2E7D32;
+  padding: 15px 30px;
+  border-radius: 4px;
+  border-left: 4px solid #5CB85C;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    bottom: -50px;
+    opacity: 0;
+  }
+  to {
+    bottom: 30px;
+    opacity: 1;
+  }
+}
+

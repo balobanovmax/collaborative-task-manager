@@ -1,140 +1,72 @@
 
 .container {
-  min-height: 100vh;
+  min-height: calc(100vh - 70px);
   background-color: #F5F5F5;
-  padding-top: 80px;
+  margin-top: 70px;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.backButton {
+  background-color: white;
+  color: #6C757D;
+  border: 1px solid #6C757D;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  max-width: 1200px;
+  margin: 0 auto 30px;
+  display: block;
+}
+
+.backButton:hover {
+  background-color: #f8f9fa;
 }
 
 .content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .welcomeSection {
   margin-bottom: 40px;
+  text-align: center;
 }
 
 .title {
   font-size: 32px;
   font-weight: 600;
   color: #333333;
-  margin-bottom: 10px;
-}
-
-.subtitle {
-  font-size: 18px;
-  color: #555555;
-}
-
-.profileCard {
-  background-color: #FFFFFF;
-  padding: 30px;
-  border-radius: 8px;
-  border: 1px solid #E0E0E0;
-  margin-bottom: 40px;
-}
-
-.cardTitle {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333333;
-  margin-bottom: 20px;
-}
-
-.profileInfo {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.infoRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.infoLabel {
-  font-size: 14px;
-  font-weight: 500;
-  color: #666666;
-  min-width: 100px;
-}
-
-.infoValue {
-  font-size: 14px;
-  color: #333333;
+  margin: 0;
 }
 
 .actionsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
   margin-bottom: 40px;
+  justify-content: center;
 }
 
-.actionCard {
-  background-color: #FFFFFF;
-  padding: 30px;
-  border-radius: 8px;
-  border: 2px solid #E0E0E0;
+.actionButton {
+  background-color: #4A90E2;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-}
-
-.actionCard:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.actionPrimary {
-  border-color: #4A90E2;
-}
-
-.actionPrimary:hover {
-  background-color: #E3F2FD;
-}
-
-.actionSuccess {
-  border-color: #5CB85C;
-}
-
-.actionSuccess:hover {
-  background-color: #E8F5E9;
-}
-
-.actionInfo {
-  border-color: #4A90E2;
-}
-
-.actionInfo:hover {
-  background-color: #E3F2FD;
-}
-
-.actionSecondary {
-  border-color: #6C757D;
-}
-
-.actionSecondary:hover {
-  background-color: #F5F5F5;
-}
-
-.actionIcon {
-  font-size: 48px;
-  margin-bottom: 15px;
-}
-
-.actionTitle {
-  font-size: 20px;
-  font-weight: 600;
-  color: #333333;
-  margin-bottom: 8px;
-}
-
-.actionDescription {
   font-size: 14px;
-  color: #666666;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.actionButton:hover {
+  background-color: #357ABD;
 }
 
 .notification {

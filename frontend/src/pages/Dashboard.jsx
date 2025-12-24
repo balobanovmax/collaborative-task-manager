@@ -9,12 +9,9 @@ function Dashboard() {
   const navigate = useNavigate();
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
-  const [user, setUser] = useState(null);
+  const user = getUser();
 
   useEffect(() => {
-    const userData = getUser();
-    setUser(userData);
-
     if (location.state?.message) {
       setNotificationMessage(location.state.message);
       setShowNotification(true);
@@ -29,65 +26,50 @@ function Dashboard() {
     }
   }, [location]);
 
+  const handleBack = () => {
+    navigate('/');
+  };
+
   return (
     <>
       <Navbar />
       <div className={styles.container}>
+        <button onClick={handleBack} className={styles.backButton}>
+          ← Back
+        </button>
+        
         <div className={styles.content}>
           <div className={styles.welcomeSection}>
             <h1 className={styles.title}>Welcome back, {user?.username}!</h1>
-            <p className={styles.subtitle}>What would you like to do today?</p>
-          </div>
-
-          <div className={styles.profileCard}>
-            <h2 className={styles.cardTitle}>Your Profile</h2>
-            <div className={styles.profileInfo}>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Username:</span>
-                <span className={styles.infoValue}>{user?.username}</span>
-              </div>
-              <div className={styles.infoRow}>
-                <span className={styles.infoLabel}>Email:</span>
-                <span className={styles.infoValue}>{user?.email}</span>
-              </div>
-            </div>
           </div>
 
           <div className={styles.actionsGrid}>
             <button 
-              className={`${styles.actionCard} ${styles.actionPrimary}`}
+              className={styles.actionButton}
               onClick={() => navigate('/my-groups')}
             >
-              <div className={styles.actionIcon}>📋</div>
-              <h3 className={styles.actionTitle}>My Groups</h3>
-              <p className={styles.actionDescription}>View and manage your groups</p>
+              My Groups
             </button>
 
             <button 
-              className={`${styles.actionCard} ${styles.actionSuccess}`}
+              className={styles.actionButton}
               onClick={() => navigate('/create-group')}
             >
-              <div className={styles.actionIcon}>➕</div>
-              <h3 className={styles.actionTitle}>Create Group</h3>
-              <p className={styles.actionDescription}>Start a new group</p>
+              Create Group
             </button>
 
             <button 
-              className={`${styles.actionCard} ${styles.actionInfo}`}
+              className={styles.actionButton}
               onClick={() => navigate('/join-group')}
             >
-              <div className={styles.actionIcon}>🔍</div>
-              <h3 className={styles.actionTitle}>Join Group</h3>
-              <p className={styles.actionDescription}>Find and join existing groups</p>
+              Join Group
             </button>
 
             <button 
-              className={`${styles.actionCard} ${styles.actionSecondary}`}
+              className={styles.actionButton}
               onClick={() => navigate('/settings')}
             >
-              <div className={styles.actionIcon}>⚙️</div>
-              <h3 className={styles.actionTitle}>Settings</h3>
-              <p className={styles.actionDescription}>Manage your account</p>
+              Settings
             </button>
           </div>
         </div>
