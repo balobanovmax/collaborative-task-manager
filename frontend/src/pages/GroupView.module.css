@@ -1,0 +1,589 @@
+.container {
+  min-height: calc(100vh - 70px);
+  padding: 40px 20px;
+  background-color: #F5F5F5;
+  margin-top: 70px;
+  box-sizing: border-box;
+}
+
+.backButton {
+  background-color: white;
+  color: #6C757D;
+  border: 1px solid #6C757D;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  max-width: 1200px;
+  margin: 0 auto 30px;
+  display: block;
+}
+
+.backButton:hover {
+  background-color: #f8f9fa;
+}
+
+.loading,
+.error {
+  text-align: center;
+  padding: 40px;
+  font-size: 16px;
+  color: #7f8c8d;
+}
+
+.error {
+  color: #E74C3C;
+  background-color: #FFEBEE;
+  border-radius: 8px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.accessDenied {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  text-align: center;
+}
+
+.accessDeniedMessage {
+  font-size: 18px;
+  font-weight: 500;
+  color: #E74C3C;
+  background-color: #FFEBEE;
+  padding: 20px 40px;
+  border-radius: 6px;
+  border-left: 4px solid #E74C3C;
+}
+
+.redirectingText {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #7f8c8d;
+}
+
+.header {
+  max-width: 1200px;
+  margin: 0 auto 30px;
+  padding: 20px 24px;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.headerTop {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.headerTitleSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.groupName {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0;
+}
+
+.editButton {
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #666;
+  background-color: transparent;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.editButton:hover {
+  background-color: #f5f5f5;
+  border-color: #999;
+  color: #333;
+}
+
+.groupDescription {
+  font-size: 15px;
+  color: #7f8c8d;
+  margin: 0;
+}
+
+.groupIdBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #fafafa;
+  padding: 12px 20px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  min-width: 100px;
+}
+
+.groupIdLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.groupIdValue {
+  font-size: 22px;
+  font-weight: 600;
+  color: #4A90E2;
+  font-family: 'Courier New', monospace;
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 30px;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mainContent {
+  min-width: 0;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0 0 15px 0;
+}
+
+.membersSection {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #E0E0E0;
+}
+
+.membersSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333333;
+  text-align: left;
+}
+
+.membersSectionHeader:hover {
+  color: #4A90E2;
+}
+
+.expandArrow {
+  font-size: 12px;
+  color: #666;
+  transition: transform 0.2s;
+}
+
+.expandArrow.expanded {
+  transform: rotate(180deg);
+}
+
+.membersList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.memberCard {
+  padding: 12px;
+  background-color: #F5F5F5;
+  border-radius: 6px;
+  transition: background-color 0.2s;
+}
+
+.memberCard:hover {
+  background-color: #ECECEC;
+}
+
+.memberInfo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.memberNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.memberName {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+}
+
+.removeMemberButton {
+  background-color: #4A90E2;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.removeMemberButton:hover {
+  background-color: #357ABD;
+}
+
+.youBadge {
+  font-size: 11px;
+  font-weight: 500;
+  color: #27AE60;
+  background-color: #E8F5E9;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.ownerBadge {
+  font-size: 11px;
+  font-weight: 500;
+  color: #4A90E2;
+  background-color: #E3F2FD;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.tasksSection {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #E0E0E0;
+}
+
+.tasksSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.manageTasksButton {
+  background-color: #4A90E2;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.manageTasksButton:hover {
+  background-color: #357ABD;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #7f8c8d;
+}
+
+.tasksList {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.taskCard {
+  padding: 16px;
+  background-color: #F5F5F5;
+  border-radius: 6px;
+  border-left: 4px solid #4A90E2;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.taskCard:hover {
+  transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.taskHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.taskTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0;
+  flex: 1;
+}
+
+.statusBadge {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 10px;
+  text-transform: capitalize;
+}
+
+.statusBadge.pending {
+  background-color: #FFF3CD;
+  color: #856404;
+}
+
+.statusBadge.in_progress {
+  background-color: #CCE5FF;
+  color: #004085;
+}
+
+.statusBadge.completed {
+  background-color: #D4EDDA;
+  color: #155724;
+}
+
+.taskDescription {
+  font-size: 14px;
+  color: #555555;
+  margin: 0 0 10px 0;
+  line-height: 1.5;
+}
+
+.taskMeta {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.taskInfo {
+  font-size: 12px;
+  color: #7f8c8d;
+}
+
+.completedInfo {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #27AE60;
+  font-weight: 500;
+}
+
+.successNotification {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #E8F5E9;
+  color: #2E7D32;
+  padding: 16px 32px;
+  border-radius: 6px;
+  border-left: 4px solid #5CB85C;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 999;
+}
+
+.removedNotification {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #FFEBEE;
+  color: #C0392B;
+  padding: 16px 32px;
+  border-radius: 6px;
+  border-left: 4px solid #E74C3C;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 999;
+}
+
+.chatButton {
+  width: 100%;
+  background-color: #4A90E2;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-top: 16px;
+}
+
+.chatButton:hover {
+  background-color: #357ABD;
+}
+
+.chatButtonNotification {
+  background-color: #E74C3C;
+}
+
+.chatButtonNotification:hover {
+  background-color: #C0392B;
+}
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.editModal {
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 24px;
+  width: 100%;
+  max-width: 450px;
+  margin: 20px;
+}
+
+.editModalTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 20px 0;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  margin-bottom: 6px;
+}
+
+.formInput {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.formInput:focus {
+  border-color: #4A90E2;
+}
+
+.formTextarea {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.formTextarea:focus {
+  border-color: #4A90E2;
+}
+
+.editModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.cancelButton {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: #eee;
+}
+
+.saveButton {
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  background-color: #4A90E2;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: #357ABD;
+}
+
+.saveButton:disabled,
+.cancelButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebar {
+    order: 2;
+  }
+  
+  .mainContent {
+    order: 1;
+  }
+}
+

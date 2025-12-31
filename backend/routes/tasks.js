@@ -8,6 +8,7 @@ import {
     deleteTask, 
     toggleTaskCompletion 
 } from '../models/Task.js';
+import { emitTaskCreated, emitTaskUpdated, emitTaskDeleted, emitTaskToggled } from '../utils/socket.js';
 
 const router = express.Router();
 
@@ -31,6 +32,9 @@ router.post('/', requireAuth, async (req, res) => {
 
         // Create the task
         const newTask = await createTask(group_id, createdBy, title, description, due_date);
+        const fullTask = await findTaskById(newTask.id);
+
+        emitTaskCreated(group_id, fullTask);
 
         res.status(201).json({
             success: true,
@@ -140,6 +144,8 @@ router.put('/:id', requireAuth, async (req, res) => {
         // Update the task
         const updatedTask = await updateTask(taskId, userId, updateData);
 
+        emitTaskUpdated(updatedTask.group_id, updatedTask);
+
         res.json({
             success: true,
             message: 'Task updated successfully',
@@ -186,6 +192,8 @@ router.delete('/:id', requireAuth, async (req, res) => {
         // Delete the task
         const result = await deleteTask(taskId, userId);
 
+        emitTaskDeleted(result.deleted_task.group_id, taskId);
+
         res.json({
             success: true,
             message: result.message,
@@ -222,7 +230,6 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
         const groupId = parseInt(req.params.groupId);
         const userId = req.userId;
 
-        // Validate group ID
         if (isNaN(groupId) || groupId <= 0) {
             return res.status(400).json({
                 success: false,
@@ -230,10 +237,17 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
             });
         }
 
-        // Extract query parameters
+        const { isUserMember } = await import('../models/GroupMember.js');
+        const isMember = await isUserMember(userId, groupId);
+        if (!isMember) {
+            return res.status(403).json({
+                success: false,
+                message: 'You must be a member of this group to view tasks'
+            });
+        }
+
         const { completed, sortBy, sortOrder } = req.query;
         
-        // Build options object
         const options = {};
         
         if (completed === 'true') {
@@ -250,7 +264,6 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
             options.sortOrder = sortOrder.toUpperCase();
         }
 
-        // Get tasks for the group
         const result = await getTasksByGroup(groupId, options);
 
         res.json({
@@ -261,7 +274,6 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Error fetching group tasks:', error);
         
-        // Handle specific error types
         let statusCode = 400;
         if (error.message.includes('not found')) {
             statusCode = 404;
@@ -295,6 +307,8 @@ router.patch('/:id/toggle', requireAuth, async (req, res) => {
 
         // Toggle task completion
         const result = await toggleTaskCompletion(taskId, userId);
+
+        emitTaskToggled(result.task.group_id, result.task);
 
         res.json({
             success: true,

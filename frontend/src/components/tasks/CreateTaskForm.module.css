@@ -1,0 +1,125 @@
+.formContainer {
+  width: 100%;
+}
+
+.formTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+.errorMessage {
+  background-color: #FFEBEE;
+  color: #C0392B;
+  padding: 12px;
+  border-radius: 4px;
+  border-left: 4px solid #E74C3C;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.formGroup {
+  margin-bottom: 20px;
+}
+
+.formLabel {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 8px;
+}
+
+.formInput {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  border: 1px solid #E0E0E0;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #4A90E2;
+}
+
+.formInput::placeholder {
+  color: #999999;
+}
+
+.formTextarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  border: 1px solid #E0E0E0;
+  border-radius: 4px;
+  box-sizing: border-box;
+  resize: vertical;
+  font-family: inherit;
+}
+
+.formTextarea:focus {
+  outline: none;
+  border-color: #4A90E2;
+}
+
+.formTextarea::placeholder {
+  color: #999999;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 16px;
+  margin-top: 30px;
+}
+
+.buttonGroup button {
+  flex: 1;
+}
+
+.btnPrimary {
+  background-color: #4A90E2;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background-color: #357ABD;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnSecondary {
+  background-color: white;
+  color: #6C757D;
+  border: 1px solid #6C757D;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btnSecondary:hover:not(:disabled) {
+  background-color: #F5F5F5;
+}
+
+.btnSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

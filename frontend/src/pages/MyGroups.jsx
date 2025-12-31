@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './MyGroups.module.css';
 import Navbar from '../components/common/Navbar';
+import ConfirmModal from '../components/common/ConfirmModal';
 import { groupAPI } from '../services/api';
 
 function MyGroups() {
@@ -13,6 +14,8 @@ function MyGroups() {
   const [errorMessage, setErrorMessage] = useState('');
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState(null);
 
   useEffect(() => {
     fetchGroups();
@@ -55,6 +58,43 @@ function MyGroups() {
     navigate(`/groups/${groupId}`);
   };
 
+  const handleDeleteGroup = async (e, groupId, groupName) => {
+    e.stopPropagation();
+    setGroupToDelete({ id: groupId, name: groupName });
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!groupToDelete) return;
+
+    try {
+      await groupAPI.deleteGroup(groupToDelete.id);
+      setShowDeleteModal(false);
+      setGroupToDelete(null);
+      setNotificationMessage('Group deleted successfully');
+      setShowNotification(true);
+      
+      setTimeout(() => {
+        setShowNotification(false);
+      }, 3000);
+      
+      fetchGroups();
+    } catch (error) {
+      setShowDeleteModal(false);
+      setGroupToDelete(null);
+      if (error.response && error.response.data && error.response.data.message) {
+        setErrorMessage(error.response.data.message);
+      } else {
+        setErrorMessage('Failed to delete group. Please try again.');
+      }
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setGroupToDelete(null);
+  };
+
   const handleBack = () => {
     navigate('/dashboard');
   };
@@ -87,13 +127,26 @@ function MyGroups() {
                     <div
                       key={group.id}
                       className={styles.groupCardOwner}
-                      onClick={() => handleGroupClick(group.id)}
                     >
                       <h3 className={styles.groupName}>{group.name}</h3>
                       <p className={styles.groupDescription}>{group.description || 'No description'}</p>
                       <div className={styles.groupMeta}>
                         <span className={styles.badge}>Owner</span>
                         <span className={styles.memberCount}>{group.member_count || 0} members</span>
+                      </div>
+                      <div className={styles.groupActions}>
+                        <button 
+                          className={styles.enterButton}
+                          onClick={() => handleGroupClick(group.id)}
+                        >
+                          Enter
+                        </button>
+                        <button 
+                          className={styles.deleteButton}
+                          onClick={(e) => handleDeleteGroup(e, group.id, group.name)}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -109,13 +162,20 @@ function MyGroups() {
                     <div
                       key={group.id}
                       className={styles.groupCardMember}
-                      onClick={() => handleGroupClick(group.id)}
                     >
                       <h3 className={styles.groupName}>{group.name}</h3>
                       <p className={styles.groupDescription}>{group.description || 'No description'}</p>
                       <div className={styles.groupMeta}>
                         <span className={styles.badge}>Member</span>
                         <span className={styles.memberCount}>{group.member_count || 0} members</span>
+                      </div>
+                      <div className={styles.groupActions}>
+                        <button 
+                          className={styles.enterButton}
+                          onClick={() => handleGroupClick(group.id)}
+                        >
+                          Enter
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -139,6 +199,16 @@ function MyGroups() {
             {notificationMessage}
           </div>
         )}
+
+        <ConfirmModal
+          isOpen={showDeleteModal}
+          title="Delete Group"
+          message={`Are you sure you want to delete "${groupToDelete?.name}"? This action cannot be undone and all tasks will be permanently deleted.`}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+          confirmText="Delete"
+          cancelText="Cancel"
+        />
       </div>
     </>
   );

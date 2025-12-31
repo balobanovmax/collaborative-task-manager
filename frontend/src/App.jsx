@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import MyGroups from './pages/MyGroups';
 import JoinGroup from './pages/JoinGroup';
 import CreateGroup from './pages/CreateGroup';
+import GroupView from './pages/GroupView';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
@@ -44,6 +45,14 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateGroup />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/groups/:groupId" 
+          element={
+            <ProtectedRoute>
+              <GroupView />
             </ProtectedRoute>
           } 
         />

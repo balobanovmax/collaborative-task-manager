@@ -326,19 +326,16 @@ export const verifyGroupPassword = async (groupId, plainPassword) => {
  */
 export const getGroupsByOwner = async (ownerId) => {
     try {
-        // Input validation
         if (!ownerId || typeof ownerId !== 'number' || ownerId <= 0) {
             throw new Error('Valid owner ID is required');
         }
         
-        // Check if user exists (optional validation)
         const { findUserById } = await import('./User.js');
         const user = await findUserById(ownerId);
         if (!user) {
             throw new Error('User not found');
         }
         
-        // Query groups owned by the user
         const query = `
             SELECT 
                 g.id, 
@@ -364,7 +361,78 @@ export const getGroupsByOwner = async (ownerId) => {
         
     } catch (error) {
         console.error('Error getting groups by owner:', error);
-        throw error; // Re-throw to handle in route
+        throw error;
+    }
+};
+
+export const updateGroup = async (groupId, ownerId, updateData) => {
+    try {
+        if (!groupId || typeof groupId !== 'number' || groupId <= 0) {
+            throw new Error('Valid group ID is required');
+        }
+        
+        if (!ownerId || typeof ownerId !== 'number' || ownerId <= 0) {
+            throw new Error('Valid owner ID is required');
+        }
+        
+        const group = await findGroupById(groupId);
+        if (!group) {
+            throw new Error('Group not found');
+        }
+        
+        if (group.owner_id !== ownerId) {
+            throw new Error('Only group owner can update the group');
+        }
+        
+        const { name, description } = updateData;
+        
+        if (name !== undefined) {
+            const validationErrors = validateGroupInput(name, description || group.description);
+            if (validationErrors.length > 0) {
+                throw new Error(validationErrors.join(', '));
+            }
+        }
+        
+        const fieldsToUpdate = [];
+        const values = [];
+        let paramCount = 1;
+        
+        if (name !== undefined) {
+            fieldsToUpdate.push(`name = $${paramCount}`);
+            values.push(name.trim());
+            paramCount++;
+        }
+        
+        if (description !== undefined) {
+            fieldsToUpdate.push(`description = $${paramCount}`);
+            values.push(description ? description.trim() : '');
+            paramCount++;
+        }
+        
+        if (fieldsToUpdate.length === 0) {
+            throw new Error('No fields to update');
+        }
+        
+        values.push(groupId);
+        
+        const query = `
+            UPDATE groups 
+            SET ${fieldsToUpdate.join(', ')}
+            WHERE id = $${paramCount}
+            RETURNING id, name, owner_id, description, is_public, created_at
+        `;
+        
+        const result = await pool.query(query, values);
+        
+        if (result.rows.length === 0) {
+            throw new Error('Failed to update group');
+        }
+        
+        return result.rows[0];
+        
+    } catch (error) {
+        console.error('Error updating group:', error);
+        throw error;
     }
 };
 

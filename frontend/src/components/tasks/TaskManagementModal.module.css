@@ -1,0 +1,90 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modalContent {
+  background-color: white;
+  padding: 30px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.menuContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.modalTitle {
+  font-size: 24px;
+  font-weight: 600;
+  color: #333333;
+  margin: 0;
+  text-align: center;
+}
+
+.modalSubtitle {
+  font-size: 14px;
+  color: #7f8c8d;
+  margin: 0;
+  text-align: center;
+}
+
+.operationList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.operationButton {
+  padding: 16px;
+  background-color: #F5F5F5;
+  border: 1px solid #E0E0E0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333333;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.operationButton:hover:not(:disabled) {
+  background-color: #E8F4FD;
+  border-color: #4A90E2;
+}
+
+.operationButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.cancelButton {
+  padding: 12px 24px;
+  background-color: white;
+  color: #6C757D;
+  border: 1px solid #6C757D;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  margin-top: 10px;
+}
+
+.cancelButton:hover {
+  background-color: #F5F5F5;
+}
+

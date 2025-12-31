@@ -64,13 +64,6 @@ function Dashboard() {
             >
               Join Group
             </button>
-
-            <button 
-              className={styles.actionButton}
-              onClick={() => navigate('/settings')}
-            >
-              Settings
-            </button>
           </div>
         </div>
 

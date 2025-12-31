@@ -48,3 +48,15 @@ CREATE TABLE tasks (
     completed_by INTEGER REFERENCES users(id) ON DELETE SET NULL
 );
 
+-- Messages table for group chat
+CREATE TABLE messages (
+    id SERIAL PRIMARY KEY,
+    group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_messages_group_id ON messages(group_id);
+CREATE INDEX idx_messages_created_at ON messages(created_at);
+
