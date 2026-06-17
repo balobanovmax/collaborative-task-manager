@@ -21,6 +21,12 @@ function Settings() {
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -160,6 +166,45 @@ function Settings() {
     }
   };
 
+  const handlePasswordSubmit = async (event) => {
+    event.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    if (!currentPassword) {
+      setPasswordError('Current password is required.');
+      return;
+    }
+
+    if (!newPassword) {
+      setPasswordError('New password is required.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('New passwords do not match.');
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      const response = await userAPI.changePassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordSuccess(response.message || 'Password updated successfully.');
+    } catch (error) {
+      setPasswordError(error.response?.data?.message || 'Failed to change password.');
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   const displayAvatarUrl = previewUrl || profilePictureUrl;
 
   return (
@@ -260,6 +305,69 @@ function Settings() {
                 </button>
               </div>
             </form>
+          )}
+
+          {!isLoading && (
+            <>
+              <div className={styles.sectionDivider} />
+              <h2 className={styles.sectionTitle}>Change Password</h2>
+              <p className={styles.sectionSubtitle}>
+                Update your login password. You will stay signed in on this device.
+              </p>
+
+              <form onSubmit={handlePasswordSubmit} className={styles.form}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel} htmlFor="currentPassword">Current Password</label>
+                  <input
+                    id="currentPassword"
+                    type="password"
+                    className={styles.formInput}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    autoComplete="current-password"
+                    disabled={isChangingPassword}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel} htmlFor="newPassword">New Password</label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    className={styles.formInput}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
+                    minLength={6}
+                    disabled={isChangingPassword}
+                  />
+                  <p className={styles.helperText}>At least 6 characters.</p>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel} htmlFor="confirmPassword">Confirm New Password</label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    className={styles.formInput}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    autoComplete="new-password"
+                    minLength={6}
+                    disabled={isChangingPassword}
+                  />
+                </div>
+
+                {passwordError && <div className={styles.errorMessage}>{passwordError}</div>}
+                {passwordSuccess && <div className={styles.successMessage}>{passwordSuccess}</div>}
+
+                <div className={styles.buttonRow}>
+                  <button type="submit" className={styles.saveButton} disabled={isChangingPassword}>
+                    {isChangingPassword ? 'Updating...' : 'Update Password'}
+                  </button>
+                </div>
+              </form>
+            </>
           )}
         </div>
       </div>

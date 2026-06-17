@@ -1,7 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { uploadAvatar } from '../middleware/uploadAvatar.js';
-import { getUserProfile, updateUserProfile, getUserPublicProfile } from '../models/User.js';
+import { getUserProfile, updateUserProfile, getUserPublicProfile, changeUserPassword } from '../models/User.js';
 import { getUserGroups } from '../models/GroupMember.js';
 import { getGroupsByOwner } from '../models/Group.js';
 import { deleteAvatarFile, getAvatarPublicPath } from '../utils/avatarFiles.js';
@@ -85,6 +85,42 @@ router.put('/profile', requireAuth, async (req, res) => {
             statusCode = 409;
         }
         
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.put('/profile/password', requireAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const { current_password, new_password } = req.body;
+
+        if (!current_password || !new_password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Current password and new password are required.'
+            });
+        }
+
+        const result = await changeUserPassword(userId, current_password, new_password);
+
+        res.json({
+            success: true,
+            message: result.message
+        });
+    } catch (error) {
+        console.error('Error changing password:', error);
+
+        let statusCode = 400;
+
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('incorrect')) {
+            statusCode = 403;
+        }
+
         res.status(statusCode).json({
             success: false,
             message: error.message

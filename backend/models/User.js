@@ -402,6 +402,55 @@ export const updateUserProfile = async (userId, profileData) => {
     }
 };
 
+export const changeUserPassword = async (userId, currentPassword, newPassword) => {
+    if (!userId || isNaN(userId) || userId <= 0) {
+        throw new Error('Invalid user ID. Must be a positive number.');
+    }
+
+    if (!currentPassword || typeof currentPassword !== 'string') {
+        throw new Error('Current password is required.');
+    }
+
+    if (!newPassword || typeof newPassword !== 'string') {
+        throw new Error('New password is required.');
+    }
+
+    if (newPassword.length < 6) {
+        throw new Error('New password must be at least 6 characters.');
+    }
+
+    if (newPassword.length > 128) {
+        throw new Error('New password must be less than 128 characters.');
+    }
+
+    if (currentPassword === newPassword) {
+        throw new Error('New password must be different from your current password.');
+    }
+
+    const userResult = await pool.query(
+        'SELECT id, password_hash FROM users WHERE id = $1',
+        [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+        throw new Error('User not found.');
+    }
+
+    const isValidPassword = await comparePassword(currentPassword, userResult.rows[0].password_hash);
+    if (!isValidPassword) {
+        throw new Error('Current password is incorrect.');
+    }
+
+    const hashedPassword = await hashPassword(newPassword);
+
+    await pool.query(
+        'UPDATE users SET password_hash = $1 WHERE id = $2',
+        [hashedPassword, userId]
+    );
+
+    return { message: 'Password updated successfully.' };
+};
+
 export const getUserPublicProfile = async (userId) => {
     try {
         // Validate input

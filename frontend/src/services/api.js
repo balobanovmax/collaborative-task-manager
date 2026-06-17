@@ -66,6 +66,14 @@ export const userAPI = {
   removeAvatar: async () => {
     const response = await api.delete('/users/profile/avatar');
     return response.data;
+  },
+
+  changePassword: async (currentPassword, newPassword) => {
+    const response = await api.put('/users/profile/password', {
+      current_password: currentPassword,
+      new_password: newPassword
+    });
+    return response.data;
   }
 };
 
