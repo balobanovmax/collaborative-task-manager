@@ -1,9 +1,9 @@
 import pool from '../config/database.js';
 import { hashPassword, comparePassword } from '../utils/passwordHash.js';
 
-const validateUserInput = (username, email, password) => {
+const validateUsername = (username) => {
     const errors = [];
-    
+
     if (!username || username.trim().length === 0) {
         errors.push('Username is required');
     } else if (username.length < 3) {
@@ -12,6 +12,30 @@ const validateUserInput = (username, email, password) => {
         errors.push('Username must be less than 50 characters');
     } else if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
         errors.push('Username can only contain letters, numbers, hyphens, and underscores');
+    }
+
+    return errors;
+};
+
+const isValidProfilePictureUrl = (profilePictureUrl) => {
+    if (profilePictureUrl.trim() === '') {
+        return true;
+    }
+
+    if (profilePictureUrl.startsWith('/uploads/avatars/')) {
+        return true;
+    }
+
+    return /^https?:\/\/.+/.test(profilePictureUrl);
+};
+
+const validateUserInput = (username, email, password) => {
+    const errors = [];
+    
+    if (!username || username.trim().length === 0) {
+        errors.push('Username is required');
+    } else {
+        errors.push(...validateUsername(username.trim()));
     }
     
     if (!email || email.trim().length === 0) {
@@ -274,14 +298,23 @@ export const updateUserProfile = async (userId, profileData) => {
         }
         
         // Extract and validate updateable fields
-        const { bio, profile_picture_url } = profileData;
+        const { bio, profile_picture_url, username } = profileData;
         
-        // Check that at least one field is being updated
-        if (bio === undefined && profile_picture_url === undefined) {
-            throw new Error('At least one field (bio or profile_picture_url) must be provided for update.');
+        if (bio === undefined && profile_picture_url === undefined && username === undefined) {
+            throw new Error('At least one field must be provided for update.');
         }
         
-        // Validate bio if provided
+        if (username !== undefined) {
+            if (typeof username !== 'string') {
+                throw new Error('Username must be a string.');
+            }
+
+            const usernameErrors = validateUsername(username.trim());
+            if (usernameErrors.length > 0) {
+                throw new Error(usernameErrors.join(' '));
+            }
+        }
+        
         if (bio !== undefined) {
             if (typeof bio !== 'string') {
                 throw new Error('Bio must be a string.');
@@ -296,25 +329,42 @@ export const updateUserProfile = async (userId, profileData) => {
             if (typeof profile_picture_url !== 'string') {
                 throw new Error('Profile picture URL must be a string.');
             }
-            if (profile_picture_url.length > 255) {
-                throw new Error('Profile picture URL cannot exceed 255 characters.');
+            if (profile_picture_url.length > 500) {
+                throw new Error('Profile picture URL cannot exceed 500 characters.');
             }
-            // Basic URL validation (optional but good practice)
-            if (profile_picture_url.trim() !== '' && !profile_picture_url.match(/^https?:\/\/.+/)) {
-                throw new Error('Profile picture URL must be a valid HTTP/HTTPS URL or empty string.');
+            if (!isValidProfilePictureUrl(profile_picture_url)) {
+                throw new Error('Profile picture URL must be a valid HTTP/HTTPS URL, an uploaded avatar path, or empty.');
             }
         }
         
-        // Check if user exists first
         const userExists = await getUserProfile(userId);
         if (!userExists) {
             throw new Error(`User with ID ${userId} not found.`);
         }
+
+        if (username !== undefined) {
+            const normalizedUsername = username.trim();
+            if (normalizedUsername !== userExists.username) {
+                const duplicateCheck = await pool.query(
+                    'SELECT id FROM users WHERE username = $1 AND id != $2',
+                    [normalizedUsername, userId]
+                );
+
+                if (duplicateCheck.rows.length > 0) {
+                    throw new Error('Username already exists');
+                }
+            }
+        }
         
-        // Build dynamic query based on provided fields
         const fieldsToUpdate = [];
         const queryValues = [];
         let paramCounter = 1;
+        
+        if (username !== undefined) {
+            fieldsToUpdate.push(`username = $${paramCounter}`);
+            queryValues.push(username.trim());
+            paramCounter++;
+        }
         
         if (bio !== undefined) {
             fieldsToUpdate.push(`bio = $${paramCounter}`);

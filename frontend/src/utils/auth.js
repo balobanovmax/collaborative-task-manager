@@ -14,6 +14,11 @@ export const setUser = (user) => {
   localStorage.setItem('user', JSON.stringify(user));
 };
 
+export const updateStoredUser = (user) => {
+  setUser(user);
+  window.dispatchEvent(new CustomEvent('user-updated', { detail: user }));
+};
+
 export const getUser = () => {
   const user = localStorage.getItem('user');
   return user ? JSON.parse(user) : null;

@@ -1,20 +1,18 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
+import { uploadAvatar } from '../middleware/uploadAvatar.js';
 import { getUserProfile, updateUserProfile, getUserPublicProfile } from '../models/User.js';
 import { getUserGroups } from '../models/GroupMember.js';
 import { getGroupsByOwner } from '../models/Group.js';
+import { deleteAvatarFile, getAvatarPublicPath } from '../utils/avatarFiles.js';
 
 const router = express.Router();
 
 router.get('/profile', requireAuth, async (req, res) => {
     try {
-        // Get user ID from auth middleware
         const userId = req.userId;
-        
-        // Get user's full profile using User model
         const userProfile = await getUserProfile(userId);
         
-        // Check if user exists (shouldn't happen if auth works correctly, but safety first)
         if (!userProfile) {
             return res.status(404).json({
                 success: false,
@@ -22,7 +20,6 @@ router.get('/profile', requireAuth, async (req, res) => {
             });
         }
         
-        // Send successful response with full profile (including email)
         res.json({
             success: true,
             data: {
@@ -33,7 +30,6 @@ router.get('/profile', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Error fetching user profile:', error);
         
-        // Send appropriate error response
         res.status(500).json({
             success: false,
             message: 'Failed to fetch user profile'
@@ -43,29 +39,33 @@ router.get('/profile', requireAuth, async (req, res) => {
 
 router.put('/profile', requireAuth, async (req, res) => {
     try {
-        // Get user ID from auth middleware
         const userId = req.userId;
+        const { bio, profile_picture_url, username } = req.body;
         
-        // Extract profile data from request body
-        const { bio, profile_picture_url } = req.body;
-        
-        // Validate that at least one field is provided
-        if (bio === undefined && profile_picture_url === undefined) {
+        if (bio === undefined && profile_picture_url === undefined && username === undefined) {
             return res.status(400).json({
                 success: false,
-                message: 'At least one field (bio or profile_picture_url) must be provided for update.'
+                message: 'At least one field must be provided for update.'
             });
         }
         
-        // Build update object with only provided fields
         const updateData = {};
         if (bio !== undefined) updateData.bio = bio;
         if (profile_picture_url !== undefined) updateData.profile_picture_url = profile_picture_url;
+        if (username !== undefined) updateData.username = username;
+
+        if (profile_picture_url !== undefined) {
+            const currentProfile = await getUserProfile(userId);
+            if (
+                currentProfile?.profile_picture_url &&
+                currentProfile.profile_picture_url !== profile_picture_url
+            ) {
+                deleteAvatarFile(currentProfile.profile_picture_url);
+            }
+        }
         
-        // Update user profile using User model
         const updatedProfile = await updateUserProfile(userId, updateData);
         
-        // Send successful response with updated profile
         res.json({
             success: true,
             message: 'Profile updated successfully',
@@ -77,19 +77,14 @@ router.put('/profile', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Error updating user profile:', error);
         
-        // Determine appropriate status code based on error message
-        let statusCode = 400; // Default to Bad Request
+        let statusCode = 400;
         
         if (error.message.includes('not found')) {
-            statusCode = 404; // Not Found
-        } else if (error.message.includes('Bio cannot exceed') || 
-                   error.message.includes('Profile picture URL cannot exceed') ||
-                   error.message.includes('must be a string') ||
-                   error.message.includes('must be a valid HTTP')) {
-            statusCode = 400; // Bad Request (validation error)
+            statusCode = 404;
+        } else if (error.message.includes('already exists')) {
+            statusCode = 409;
         }
         
-        // Send appropriate error response
         res.status(statusCode).json({
             success: false,
             message: error.message
@@ -97,26 +92,102 @@ router.put('/profile', requireAuth, async (req, res) => {
     }
 });
 
+router.post('/profile/avatar', requireAuth, (req, res) => {
+    uploadAvatar.single('avatar')(req, res, async (uploadError) => {
+        if (uploadError) {
+            return res.status(400).json({
+                success: false,
+                message: uploadError.message || 'Failed to upload avatar'
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Avatar file is required'
+            });
+        }
+
+        try {
+            const userId = req.userId;
+            const avatarPath = getAvatarPublicPath(req.file.filename);
+            const currentProfile = await getUserProfile(userId);
+
+            if (currentProfile?.profile_picture_url) {
+                deleteAvatarFile(currentProfile.profile_picture_url);
+            }
+
+            const updatedProfile = await updateUserProfile(userId, {
+                profile_picture_url: avatarPath
+            });
+
+            res.json({
+                success: true,
+                message: 'Avatar uploaded successfully',
+                data: {
+                    user: updatedProfile
+                }
+            });
+        } catch (error) {
+            deleteAvatarFile(getAvatarPublicPath(req.file.filename));
+
+            console.error('Error saving avatar:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message || 'Failed to save avatar'
+            });
+        }
+    });
+});
+
+router.delete('/profile/avatar', requireAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const currentProfile = await getUserProfile(userId);
+
+        if (!currentProfile) {
+            return res.status(404).json({
+                success: false,
+                message: 'User profile not found'
+            });
+        }
+
+        if (currentProfile.profile_picture_url) {
+            deleteAvatarFile(currentProfile.profile_picture_url);
+        }
+
+        const updatedProfile = await updateUserProfile(userId, {
+            profile_picture_url: ''
+        });
+
+        res.json({
+            success: true,
+            message: 'Avatar removed successfully',
+            data: {
+                user: updatedProfile
+            }
+        });
+    } catch (error) {
+        console.error('Error removing avatar:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to remove avatar'
+        });
+    }
+});
+
 router.get('/groups', requireAuth, async (req, res) => {
     try {
-        // Get user ID from auth middleware
         const userId = req.userId;
         
-        // Get groups where user is the owner
         const ownedGroups = await getGroupsByOwner(userId);
-        
-        // Get groups where user is a member (includes owned groups)
         const allUserGroups = await getUserGroups(userId);
-        
-        // Filter out owned groups from member groups to avoid duplication
         const memberGroups = allUserGroups.filter(group => group.owner_id !== userId);
         
-        // Calculate totals
         const totalOwnedGroups = ownedGroups.length;
         const totalMemberGroups = memberGroups.length;
         const totalGroups = totalOwnedGroups + totalMemberGroups;
         
-        // Send successful response with separated groups
         res.json({
             success: true,
             data: {
@@ -133,7 +204,6 @@ router.get('/groups', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Error fetching user groups:', error);
         
-        // Send appropriate error response
         res.status(500).json({
             success: false,
             message: 'Failed to fetch user groups'
@@ -143,7 +213,6 @@ router.get('/groups', requireAuth, async (req, res) => {
 
 router.get('/:id', async (req, res) => {
     try {
-        // Extract and validate user ID from URL parameter
         const userId = parseInt(req.params.id);
         
         if (isNaN(userId) || userId <= 0) {
@@ -153,10 +222,8 @@ router.get('/:id', async (req, res) => {
             });
         }
         
-        // Get user's public profile using User model
         const userProfile = await getUserPublicProfile(userId);
         
-        // Check if user exists
         if (!userProfile) {
             return res.status(404).json({
                 success: false,
@@ -164,7 +231,6 @@ router.get('/:id', async (req, res) => {
             });
         }
         
-        // Send successful response with public profile (no email)
         res.json({
             success: true,
             data: {
@@ -175,7 +241,6 @@ router.get('/:id', async (req, res) => {
     } catch (error) {
         console.error('Error fetching user public profile:', error);
         
-        // Send appropriate error response
         res.status(500).json({
             success: false,
             message: 'Failed to fetch user profile'

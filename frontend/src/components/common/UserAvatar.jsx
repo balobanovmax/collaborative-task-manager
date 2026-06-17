@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import styles from './UserAvatar.module.css';
+import { resolveAvatarUrl } from '../../utils/avatar';
 
 const getInitials = (username) => {
   if (!username) return '?';
@@ -10,14 +12,22 @@ const getInitials = (username) => {
 };
 
 function UserAvatar({ username, profilePictureUrl, size = 'md', className = '' }) {
+  const [imageError, setImageError] = useState(false);
   const sizeClass = styles[size] || styles.md;
+  const avatarUrl = resolveAvatarUrl(profilePictureUrl);
+  const showImage = avatarUrl && !imageError;
 
-  if (profilePictureUrl) {
+  useEffect(() => {
+    setImageError(false);
+  }, [profilePictureUrl]);
+
+  if (showImage) {
     return (
       <img
-        src={profilePictureUrl}
+        src={avatarUrl}
         alt={username || 'User avatar'}
         className={`${styles.avatarImage} ${sizeClass} ${className}`}
+        onError={() => setImageError(true)}
       />
     );
   }

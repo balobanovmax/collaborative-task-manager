@@ -3,6 +3,7 @@ import styles from './ChatPanel.module.css';
 import { messageAPI } from '../../services/api';
 import { onMessageSent, onChatCleared } from '../../services/socket';
 import { getUser } from '../../utils/auth';
+import UserAvatar from '../common/UserAvatar';
 
 function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
   const [messages, setMessages] = useState([]);
@@ -192,6 +193,14 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
                       key={msg.id}
                       className={`${styles.messageWrapper} ${isOwn ? styles.ownMessage : ''}`}
                     >
+                      {!isOwn && (
+                        <UserAvatar
+                          username={msg.username}
+                          profilePictureUrl={msg.profile_picture_url}
+                          size="sm"
+                          className={styles.messageAvatar}
+                        />
+                      )}
                       <div className={styles.messageBubble}>
                         {!isOwn && (
                           <div className={styles.messageAuthor}>{msg.username}</div>

@@ -1,9 +1,11 @@
+import dotenv from 'dotenv';
 dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import pool from './config/database.js';
@@ -13,6 +15,8 @@ import userRoutes from './routes/users.js';
 import taskRoutes from './routes/tasks.js';
 import messageRoutes from './routes/messages.js';
 import { setSocketIO } from './utils/socket.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const httpServer = createServer(app);
@@ -29,9 +33,12 @@ setSocketIO(io);
 
 const PORT = process.env.PORT || 3000;
 
-app.use(helmet());
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
+}));
 app.use(cors());
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/groups', groupRoutes);

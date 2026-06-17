@@ -7,6 +7,7 @@ import MyGroups from './pages/MyGroups';
 import JoinGroup from './pages/JoinGroup';
 import CreateGroup from './pages/CreateGroup';
 import GroupView from './pages/GroupView';
+import Settings from './pages/Settings';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 function App() {
@@ -53,6 +54,14 @@ function App() {
           element={
             <ProtectedRoute>
               <GroupView />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/settings" 
+          element={
+            <ProtectedRoute>
+              <Settings />
             </ProtectedRoute>
           } 
         />

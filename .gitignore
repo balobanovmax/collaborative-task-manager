@@ -1,3 +1,7 @@
+# Uploaded user avatars
+uploads/avatars/*
+!uploads/avatars/.gitkeep
+
 docs/
 # Logs
 logs

@@ -65,14 +65,18 @@ export const createMessage = async (groupId, userId, content) => {
     const result = await pool.query(insertQuery, [groupId, userId, validation.cleanedContent]);
     const message = result.rows[0];
     
-    const userQuery = await pool.query('SELECT username FROM users WHERE id = $1', [userId]);
-    const username = userQuery.rows[0]?.username || 'Unknown';
+    const userQuery = await pool.query(
+        'SELECT username, profile_picture_url FROM users WHERE id = $1',
+        [userId]
+    );
+    const user = userQuery.rows[0];
     
     return {
         id: message.id,
         group_id: message.group_id,
         user_id: message.user_id,
-        username: username,
+        username: user?.username || 'Unknown',
+        profile_picture_url: user?.profile_picture_url || null,
         content: message.content,
         created_at: message.created_at
     };
@@ -108,7 +112,7 @@ export const getMessagesByGroup = async (groupId, userId, limit = 100, before = 
     
     if (before) {
         query = `
-            SELECT m.id, m.group_id, m.user_id, m.content, m.created_at, u.username
+            SELECT m.id, m.group_id, m.user_id, m.content, m.created_at, u.username, u.profile_picture_url
             FROM messages m
             LEFT JOIN users u ON m.user_id = u.id
             WHERE m.group_id = $1 AND m.created_at < $2
@@ -118,7 +122,7 @@ export const getMessagesByGroup = async (groupId, userId, limit = 100, before = 
         queryParams = [groupId, before, limit];
     } else {
         query = `
-            SELECT m.id, m.group_id, m.user_id, m.content, m.created_at, u.username
+            SELECT m.id, m.group_id, m.user_id, m.content, m.created_at, u.username, u.profile_picture_url
             FROM messages m
             LEFT JOIN users u ON m.user_id = u.id
             WHERE m.group_id = $1
@@ -135,6 +139,7 @@ export const getMessagesByGroup = async (groupId, userId, limit = 100, before = 
         group_id: row.group_id,
         user_id: row.user_id,
         username: row.username || 'Unknown',
+        profile_picture_url: row.profile_picture_url || null,
         content: row.content,
         created_at: row.created_at
     }));

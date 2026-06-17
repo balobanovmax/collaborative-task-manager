@@ -1,0 +1,126 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background-color: var(--overlay-heavy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 20px;
+}
+
+.modalContent {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 28px 24px 24px;
+  box-shadow: 0 12px 30px var(--shadow-md);
+}
+
+.closeButton {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: var(--text-subtle);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.closeButton:hover {
+  color: var(--text-primary);
+}
+
+.profileHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.profileAvatar {
+  border: 3px solid var(--border);
+  margin-bottom: 14px;
+}
+
+.profileName {
+  margin: 0 0 10px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ownerBadge {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--primary);
+  background-color: var(--badge-owner-bg);
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.profileSection {
+  margin-bottom: 18px;
+}
+
+.sectionLabel {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.bioText,
+.metaText {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bioText {
+  background-color: var(--bg-page);
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.metaText {
+  color: var(--text-primary);
+}
+
+.doneButton {
+  width: 100%;
+  margin-top: 8px;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: var(--primary);
+  color: var(--text-inverse);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.doneButton:hover {
+  background-color: var(--primary-hover);
+}

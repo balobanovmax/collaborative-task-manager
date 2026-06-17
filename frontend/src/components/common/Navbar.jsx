@@ -1,13 +1,24 @@
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
+import UserAvatar from './UserAvatar';
 import { isAuthenticated, logout, getUser } from '../../utils/auth';
 import { useTheme } from '../../context/ThemeContext';
 
 function Navbar() {
   const navigate = useNavigate();
   const loggedIn = isAuthenticated();
-  const user = getUser();
+  const [user, setUser] = useState(getUser());
   const { isDark, toggleTheme } = useTheme();
+
+  useEffect(() => {
+    const handleUserUpdated = (event) => {
+      setUser(event.detail);
+    };
+
+    window.addEventListener('user-updated', handleUserUpdated);
+    return () => window.removeEventListener('user-updated', handleUserUpdated);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -22,9 +33,14 @@ function Navbar() {
             Task Manager
           </Link>
           {loggedIn && user?.username && (
-            <span className={styles.userGreeting}>
-              Logged in as: {user.username}
-            </span>
+            <div className={styles.userGreeting}>
+              <UserAvatar
+                username={user.username}
+                profilePictureUrl={user.profile_picture_url}
+                size="sm"
+              />
+              <span>Logged in as: {user.username}</span>
+            </div>
           )}
         </div>
         
@@ -39,9 +55,14 @@ function Navbar() {
             {isDark ? '☀ Light' : '☾ Dark'}
           </button>
           {loggedIn ? (
-            <button onClick={handleLogout} className={styles.btnSecondary}>
-              Log Out
-            </button>
+            <>
+              <Link to="/settings" className={styles.btnSecondary}>
+                Settings
+              </Link>
+              <button onClick={handleLogout} className={styles.btnSecondary}>
+                Log Out
+              </button>
+            </>
           ) : (
             <>
               <Link to="/login" className={styles.btnSecondary}>
@@ -59,4 +80,3 @@ function Navbar() {
 }
 
 export default Navbar;
-

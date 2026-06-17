@@ -1,0 +1,214 @@
+.container {
+  min-height: calc(100vh - 70px);
+  background-color: var(--bg-page);
+  margin-top: 70px;
+  padding: 40px 20px;
+  box-sizing: border-box;
+}
+
+.backButton {
+  background-color: var(--bg-surface);
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  max-width: 720px;
+  margin: 0 auto 24px;
+  display: block;
+}
+
+.backButton:hover {
+  background-color: var(--bg-hover);
+}
+
+.card {
+  max-width: 720px;
+  margin: 0 auto;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 32px;
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  margin: 0 0 28px;
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px 0;
+  color: var(--text-muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.avatarSection {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.avatarPreview {
+  border: 2px solid var(--border);
+}
+
+.avatarActions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+.uploadButton,
+.removeAvatarButton,
+.saveButton {
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.uploadButton {
+  display: inline-block;
+  padding: 10px 16px;
+  background-color: var(--primary);
+  color: var(--text-inverse);
+  text-align: center;
+}
+
+.uploadButton:hover {
+  background-color: var(--primary-hover);
+}
+
+.removeAvatarButton {
+  padding: 10px 16px;
+  background-color: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+}
+
+.removeAvatarButton:hover:not(:disabled) {
+  background-color: var(--danger-bg);
+}
+
+.removeAvatarButton:disabled,
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.helperText {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.formInput,
+.formTextarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 14px;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.formInput:focus,
+.formTextarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.readOnlyInput {
+  background-color: var(--bg-muted);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.errorMessage,
+.successMessage {
+  padding: 12px 14px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.errorMessage {
+  background-color: var(--danger-bg);
+  color: var(--danger-text);
+  border-left: 4px solid var(--danger);
+}
+
+.successMessage {
+  background-color: var(--success-bg);
+  color: var(--success-text);
+  border-left: 4px solid var(--success);
+}
+
+.buttonRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saveButton {
+  padding: 12px 24px;
+  background-color: var(--primary);
+  color: var(--text-inverse);
+  border: none;
+}
+
+.saveButton:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 24px 20px;
+  }
+
+  .avatarSection {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

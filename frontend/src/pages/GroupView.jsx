@@ -4,9 +4,10 @@ import styles from './GroupView.module.css';
 import Navbar from '../components/common/Navbar';
 import TaskManagementModal from '../components/tasks/TaskManagementModal';
 import ConfirmModal from '../components/common/ConfirmModal';
+import MemberProfileModal from '../components/groups/MemberProfileModal';
 import ChatPanel from '../components/chat/ChatPanel';
 import UserAvatar from '../components/common/UserAvatar';
-import { groupAPI } from '../services/api';
+import { groupAPI, userAPI } from '../services/api';
 import { getUser } from '../utils/auth';
 import {
   connectSocket,
@@ -66,9 +67,11 @@ function GroupView() {
   const [editError, setEditError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [selectedMember, setSelectedMember] = useState(null);
 
   useEffect(() => {
     setAssigneeFilter('all');
+    setSelectedMember(null);
   }, [groupId]);
 
   const filteredTasks = tasks.filter((task) => {
@@ -296,6 +299,35 @@ function GroupView() {
     setConfirmModal({ isOpen: false, memberId: null, memberName: '' });
   };
 
+  const openMemberProfile = async (member) => {
+    setSelectedMember(member);
+
+    try {
+      const response = await userAPI.getPublicProfile(member.user_id);
+      setSelectedMember({
+        ...member,
+        ...response.data.user
+      });
+    } catch {
+      setSelectedMember(member);
+    }
+  };
+
+  const closeMemberProfile = () => {
+    setSelectedMember(null);
+  };
+
+  const handleMemberCardKeyDown = (event, member, isCurrentUser) => {
+    if (isCurrentUser) {
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openMemberProfile(member);
+    }
+  };
+
   const openEditModal = () => {
     setEditName(group?.name || '');
     setEditDescription(group?.description || '');
@@ -455,7 +487,20 @@ function GroupView() {
                     const canRemove = currentUser?.id === group?.owner_id && !isOwner && !isCurrentUser;
                     
                     return (
-                    <div key={member.user_id} className={styles.memberCard}>
+                    <div
+                      key={member.user_id}
+                      className={`${styles.memberCard} ${!isCurrentUser ? styles.memberCardClickable : ''}`}
+                      onClick={!isCurrentUser ? () => openMemberProfile(member) : undefined}
+                      onKeyDown={(event) => handleMemberCardKeyDown(event, member, isCurrentUser)}
+                      role={!isCurrentUser ? 'button' : undefined}
+                      tabIndex={!isCurrentUser ? 0 : undefined}
+                      title={!isCurrentUser ? `View ${member.username}'s profile` : undefined}
+                    >
+                      <UserAvatar
+                        username={member.username}
+                        profilePictureUrl={member.profile_picture_url}
+                        size="sm"
+                      />
                       <div className={styles.memberInfo}>
                         <div className={styles.memberNameRow}>
                           <span className={styles.memberName}>{member.username}</span>
@@ -465,7 +510,10 @@ function GroupView() {
                             {canRemove && (
                               <button
                                 className={styles.removeMemberButton}
-                                onClick={() => handleRemoveMember(member.user_id, member.username)}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleRemoveMember(member.user_id, member.username);
+                                }}
                                 title="Remove member"
                               >
                                 Manage
@@ -620,6 +668,12 @@ function GroupView() {
           onCancel={cancelRemoveMember}
           confirmText="Remove"
           cancelText="Cancel"
+        />
+
+        <MemberProfileModal
+          member={selectedMember}
+          isGroupOwner={selectedMember?.user_id === group?.owner_id}
+          onClose={closeMemberProfile}
         />
 
         <ChatPanel

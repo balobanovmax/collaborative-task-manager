@@ -36,6 +36,39 @@ export const authAPI = {
   }
 };
 
+export const userAPI = {
+  getProfile: async () => {
+    const response = await api.get('/users/profile');
+    return response.data;
+  },
+
+  getPublicProfile: async (userId) => {
+    const response = await api.get(`/users/${userId}`);
+    return response.data;
+  },
+
+  updateProfile: async ({ username, bio }) => {
+    const response = await api.put('/users/profile', { username, bio });
+    return response.data;
+  },
+
+  uploadAvatar: async (file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await api.post('/users/profile/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  },
+
+  removeAvatar: async () => {
+    const response = await api.delete('/users/profile/avatar');
+    return response.data;
+  }
+};
+
 export const groupAPI = {
   getUserGroups: async () => {
     const response = await api.get('/users/groups');

@@ -219,6 +219,9 @@
 }
 
 .memberCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 12px;
   background-color: var(--bg-page);
   border-radius: 6px;
@@ -229,10 +232,25 @@
   background-color: var(--bg-hover-strong);
 }
 
+.memberCardClickable {
+  cursor: pointer;
+}
+
+.memberCardClickable:hover {
+  border: 1px solid var(--border-light);
+}
+
+.memberCardClickable:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .memberInfo {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex: 1;
+  min-width: 0;
 }
 
 .memberNameRow {
