@@ -1,0 +1,152 @@
+.thread {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.toggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-subtle);
+  font-family: inherit;
+}
+
+.toggleButton:hover {
+  color: var(--primary);
+}
+
+.expandArrow {
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+
+.expandArrow.expanded {
+  transform: rotate(180deg);
+}
+
+.threadBody {
+  margin-top: 12px;
+}
+
+.statusText {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.commentList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.commentItem {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px;
+  background: var(--bg-page);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.ownComment {
+  border-color: rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.commentContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.commentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.commentAuthor {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.commentTime {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.commentText {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-subtle);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.commentForm {
+  display: flex;
+  gap: 8px;
+}
+
+.commentInput {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.commentInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.commentSubmit {
+  padding: 10px 16px;
+  background: var(--primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.commentSubmit:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.commentSubmit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: var(--danger-bg);
+  color: var(--danger-hover);
+  border-radius: 4px;
+  font-size: 12px;
+}

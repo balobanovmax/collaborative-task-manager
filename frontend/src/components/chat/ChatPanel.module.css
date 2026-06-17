@@ -166,6 +166,78 @@
   color: var(--chat-time-own);
 }
 
+.mention {
+  color: var(--primary);
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.12);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.ownMessage .mention,
+.ownMessage .mentionSelf {
+  color: var(--text-inverse);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mentionSelf {
+  color: var(--warning, #d97706);
+  font-weight: 700;
+  background: rgba(217, 119, 6, 0.15);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.mentionedMessage .messageBubble {
+  box-shadow: inset 0 0 0 1px rgba(217, 119, 6, 0.35);
+}
+
+.mentionedYouLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--warning, #d97706);
+  margin-bottom: 4px;
+}
+
+.inputWrapper {
+  position: relative;
+  flex: 1;
+}
+
+.mentionSuggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px var(--shadow-sm);
+  overflow: hidden;
+  z-index: 2;
+}
+
+.mentionSuggestion {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mentionSuggestion:hover,
+.mentionSuggestionActive {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
 .errorMessage {
   background: var(--danger-bg);
   color: var(--danger-hover);

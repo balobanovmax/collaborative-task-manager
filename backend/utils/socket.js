@@ -67,3 +67,7 @@ export const emitJoinRequestUpdated = (groupId, request, action) => {
     emitToGroup(groupId, 'join-request-updated', { request, action });
 };
 
+export const emitTaskCommentCreated = (groupId, taskId, comment) => {
+    emitToGroup(groupId, 'task-comment-created', { taskId, comment });
+};
+

@@ -50,7 +50,8 @@ const formatTaskFromRow = (task, extra = {}) => ({
         id: task.assigned_to,
         username: task.assignee_username,
         profile_picture_url: task.assignee_profile_picture_url
-    } : null
+    } : null,
+    comment_count: task.comment_count !== undefined ? parseInt(task.comment_count, 10) : 0
 });
 
 export const validateTaskAssignee = async (groupId, assigneeId) => {
@@ -308,7 +309,8 @@ export const getTasksByGroup = async (groupId, options = {}) => {
         
         const query = `
             SELECT 
-                ${TASK_SELECT_FIELDS}
+                ${TASK_SELECT_FIELDS},
+                (SELECT COUNT(*)::int FROM task_comments tc WHERE tc.task_id = t.id) AS comment_count
             FROM tasks t
             LEFT JOIN users u_creator ON t.created_by = u_creator.id
             LEFT JOIN users u_completer ON t.completed_by = u_completer.id

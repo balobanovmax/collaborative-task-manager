@@ -194,6 +194,16 @@ export const taskAPI = {
   toggleTaskCompletion: async (taskId) => {
     const response = await api.patch(`/tasks/${taskId}/toggle`);
     return response.data;
+  },
+
+  getComments: async (taskId) => {
+    const response = await api.get(`/tasks/${taskId}/comments`);
+    return response.data;
+  },
+
+  addComment: async (taskId, content) => {
+    const response = await api.post(`/tasks/${taskId}/comments`, { content });
+    return response.data;
   }
 };
 

@@ -1,4 +1,6 @@
 import pool from '../config/database.js';
+import { getGroupMembers } from './GroupMember.js';
+import { parseMentionsFromContent } from '../utils/mentionParser.js';
 
 export const validateMessageInput = (content) => {
     const errors = [];
@@ -18,6 +20,51 @@ export const validateMessageInput = (content) => {
         errors: errors,
         cleanedContent: content ? content.trim() : null
     };
+};
+
+const attachMentionsToMessages = async (messages) => {
+    if (!messages.length) {
+        return messages;
+    }
+
+    const messageIds = messages.map((message) => message.id);
+    const mentionsResult = await pool.query(`
+        SELECT mm.message_id, mm.mentioned_user_id, u.username
+        FROM message_mentions mm
+        JOIN users u ON mm.mentioned_user_id = u.id
+        WHERE mm.message_id = ANY($1)
+        ORDER BY mm.id ASC
+    `, [messageIds]);
+
+    const mentionsByMessageId = {};
+    mentionsResult.rows.forEach((row) => {
+        if (!mentionsByMessageId[row.message_id]) {
+            mentionsByMessageId[row.message_id] = [];
+        }
+        mentionsByMessageId[row.message_id].push({
+            user_id: row.mentioned_user_id,
+            username: row.username
+        });
+    });
+
+    return messages.map((message) => ({
+        ...message,
+        mentions: mentionsByMessageId[message.id] || []
+    }));
+};
+
+const storeMessageMentions = async (messageId, mentions) => {
+    if (!mentions.length) {
+        return;
+    }
+
+    for (const mention of mentions) {
+        await pool.query(`
+            INSERT INTO message_mentions (message_id, mentioned_user_id)
+            VALUES ($1, $2)
+            ON CONFLICT (message_id, mentioned_user_id) DO NOTHING
+        `, [messageId, mention.user_id]);
+    }
 };
 
 export const createMessage = async (groupId, userId, content) => {
@@ -55,6 +102,9 @@ export const createMessage = async (groupId, userId, content) => {
     if (!memberUserId && userId !== groupOwnerId) {
         throw new Error('You must be a member of this group to send messages.');
     }
+
+    const members = await getGroupMembers(groupId);
+    const mentions = parseMentionsFromContent(validation.cleanedContent, members);
     
     const insertQuery = `
         INSERT INTO messages (group_id, user_id, content)
@@ -64,6 +114,8 @@ export const createMessage = async (groupId, userId, content) => {
     
     const result = await pool.query(insertQuery, [groupId, userId, validation.cleanedContent]);
     const message = result.rows[0];
+
+    await storeMessageMentions(message.id, mentions);
     
     const userQuery = await pool.query(
         'SELECT username, profile_picture_url FROM users WHERE id = $1',
@@ -78,7 +130,8 @@ export const createMessage = async (groupId, userId, content) => {
         username: user?.username || 'Unknown',
         profile_picture_url: user?.profile_picture_url || null,
         content: message.content,
-        created_at: message.created_at
+        created_at: message.created_at,
+        mentions
     };
 };
 
@@ -144,7 +197,8 @@ export const getMessagesByGroup = async (groupId, userId, limit = 100, before = 
         created_at: row.created_at
     }));
     
-    return messages.reverse();
+    const messagesWithMentions = await attachMentionsToMessages(messages.reverse());
+    return messagesWithMentions;
 };
 
 export const deleteAllMessagesByGroup = async (groupId, userId) => {
@@ -173,4 +227,3 @@ export const deleteAllMessagesByGroup = async (groupId, userId) => {
         deleted_count: result.rowCount
     };
 };
-

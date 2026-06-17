@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import styles from './GroupView.module.css';
 import Navbar from '../components/common/Navbar';
 import TaskManagementModal from '../components/tasks/TaskManagementModal';
+import TaskCommentThread from '../components/tasks/TaskCommentThread';
 import ConfirmModal from '../components/common/ConfirmModal';
 import MemberProfileModal from '../components/groups/MemberProfileModal';
 import ChatPanel from '../components/chat/ChatPanel';
@@ -22,7 +23,8 @@ import {
   onMessageSent,
   onChatCleared,
   onGroupUpdated,
-  onJoinRequestUpdated
+  onJoinRequestUpdated,
+  onTaskCommentCreated
 } from '../services/socket';
 
 const getTaskAssignee = (task) => {
@@ -57,6 +59,7 @@ function GroupView() {
   const [removedMessage, setRemovedMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [unreadMentionCount, setUnreadMentionCount] = useState(0);
   const isChatOpenRef = useRef(false);
   const currentUserIdRef = useRef(currentUser?.id);
   const [isMembersExpanded, setIsMembersExpanded] = useState(false);
@@ -158,6 +161,7 @@ function GroupView() {
 
   useEffect(() => {
     setUnreadMessageCount(0);
+    setUnreadMentionCount(0);
   }, [groupId]);
 
   useEffect(() => {
@@ -253,11 +257,20 @@ function GroupView() {
         }
 
         setUnreadMessageCount(prev => prev + 1);
+
+        const mentionsCurrentUser = (data.message.mentions || []).some(
+          (mention) => Number(mention.user_id) === viewerUserId
+        );
+
+        if (mentionsCurrentUser) {
+          setUnreadMentionCount(prev => prev + 1);
+        }
       }));
 
       unsubscribers.push(onChatCleared((data) => {
         if (mounted && !isChatOpenRef.current && Number(data.groupId) === groupIdInt) {
           setUnreadMessageCount(0);
+          setUnreadMentionCount(0);
         }
       }));
 
@@ -275,6 +288,24 @@ function GroupView() {
         if (data.action === 'approved' || data.action === 'rejected') {
           setJoinRequests((prev) => prev.filter((request) => request.id !== data.request.id));
         }
+      }));
+
+      unsubscribers.push(onTaskCommentCreated((data) => {
+        if (!mounted) {
+          return;
+        }
+
+        if (Number(data.comment.user_id) === Number(currentUserIdRef.current)) {
+          return;
+        }
+
+        setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            Number(task.id) === Number(data.taskId)
+              ? { ...task, comment_count: (task.comment_count || 0) + 1 }
+              : task
+          )
+        );
       }));
     };
 
@@ -298,6 +329,16 @@ function GroupView() {
     setTimeout(() => {
       setSuccessMessage('');
     }, 3000);
+  };
+
+  const handleTaskCommentAdded = (taskId) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        Number(task.id) === Number(taskId)
+          ? { ...task, comment_count: (task.comment_count || 0) + 1 }
+          : task
+      )
+    );
   };
 
   const handleRemoveMember = (memberId, memberName) => {
@@ -634,16 +675,22 @@ function GroupView() {
               )}
             </div>
             <button
-              className={`${styles.chatButton} ${unreadMessageCount > 0 ? styles.chatButtonNotification : ''}`}
+              className={`${styles.chatButton} ${unreadMessageCount > 0 ? styles.chatButtonNotification : ''} ${unreadMentionCount > 0 ? styles.chatButtonMention : ''}`}
               onClick={() => {
                 setIsChatOpen(true);
                 setUnreadMessageCount(0);
+                setUnreadMentionCount(0);
               }}
+              title={
+                unreadMessageCount > 0
+                  ? `${unreadMessageCount} unread message${unreadMessageCount === 1 ? '' : 's'}${unreadMentionCount > 0 ? `, ${unreadMentionCount} mentioned you` : ''}`
+                  : 'Open group chat'
+              }
             >
               Enter Chat
               {unreadMessageCount > 0 && (
-                <span className={styles.chatBadge}>
-                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                <span className={`${styles.chatBadge} ${unreadMentionCount > 0 ? styles.chatBadgeMention : ''}`}>
+                  {unreadMentionCount > 0 ? `@${unreadMessageCount > 99 ? '99+' : unreadMessageCount}` : (unreadMessageCount > 99 ? '99+' : unreadMessageCount)}
                 </span>
               )}
             </button>
@@ -739,6 +786,13 @@ function GroupView() {
                             ✓ Completed by {task.completer_username || task.completer?.username}
                         </div>
                       )}
+
+                      <TaskCommentThread
+                        taskId={task.id}
+                        groupId={parseInt(groupId)}
+                        initialCount={task.comment_count || 0}
+                        onCommentAdded={handleTaskCommentAdded}
+                      />
                     </div>
                     );
                   })}
@@ -784,6 +838,7 @@ function GroupView() {
           isOpen={isChatOpen}
           onClose={() => setIsChatOpen(false)}
           isOwner={currentUser?.id === group?.owner_id}
+          members={members}
         />
 
         {isEditModalOpen && (

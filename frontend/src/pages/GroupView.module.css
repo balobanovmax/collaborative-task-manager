@@ -670,6 +670,19 @@
   background-color: var(--danger-hover);
 }
 
+.chatButtonMention {
+  background-color: var(--warning, #d97706);
+}
+
+.chatButtonMention:hover {
+  background-color: #b45309;
+}
+
+.chatBadgeMention {
+  background-color: var(--warning, #d97706);
+  min-width: 24px;
+}
+
 .modalOverlay {
   position: fixed;
   top: 0;

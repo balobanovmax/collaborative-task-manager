@@ -8,7 +8,8 @@ import {
     deleteTask, 
     toggleTaskCompletion 
 } from '../models/Task.js';
-import { emitTaskCreated, emitTaskUpdated, emitTaskDeleted, emitTaskToggled } from '../utils/socket.js';
+import { createTaskComment, getCommentsByTask } from '../models/TaskComment.js';
+import { emitTaskCreated, emitTaskUpdated, emitTaskDeleted, emitTaskToggled, emitTaskCommentCreated } from '../utils/socket.js';
 
 const router = express.Router();
 
@@ -45,6 +46,79 @@ router.post('/', requireAuth, async (req, res) => {
         if (error.message.includes('not found') || error.message.includes('does not exist')) {
             statusCode = 404;
         } else if (error.message.includes('not a member') || error.message.includes('permission')) {
+            statusCode = 403;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.get('/:id/comments', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id);
+
+        if (isNaN(taskId) || taskId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid task ID'
+            });
+        }
+
+        const comments = await getCommentsByTask(taskId, req.userId);
+
+        res.json({
+            success: true,
+            data: { comments }
+        });
+    } catch (error) {
+        console.error('Error fetching task comments:', error);
+
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('must be a member')) {
+            statusCode = 403;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.post('/:id/comments', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id);
+        const { content } = req.body;
+
+        if (isNaN(taskId) || taskId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid task ID'
+            });
+        }
+
+        const comment = await createTaskComment(taskId, req.userId, content);
+        const task = await findTaskById(taskId);
+
+        emitTaskCommentCreated(task.group_id, taskId, comment);
+
+        res.status(201).json({
+            success: true,
+            message: 'Comment added successfully',
+            data: { comment }
+        });
+    } catch (error) {
+        console.error('Error creating task comment:', error);
+
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('must be a member')) {
             statusCode = 403;
         }
 

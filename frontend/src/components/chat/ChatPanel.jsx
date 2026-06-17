@@ -3,18 +3,32 @@ import styles from './ChatPanel.module.css';
 import { messageAPI } from '../../services/api';
 import { onMessageSent, onChatCleared } from '../../services/socket';
 import { getUser } from '../../utils/auth';
+import {
+  renderMessageWithMentions,
+  getMentionQueryAtCursor,
+  insertMention
+} from '../../utils/renderMentions';
 import UserAvatar from '../common/UserAvatar';
 
-function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
+function ChatPanel({ groupId, isOpen, onClose, isOwner, members = [] }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [error, setError] = useState('');
+  const [mentionQuery, setMentionQuery] = useState(null);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const currentUser = getUser();
+
+  const mentionSuggestions = mentionQuery === null
+    ? []
+    : members.filter((member) =>
+        member.username.toLowerCase().startsWith(mentionQuery.toLowerCase())
+        && member.user_id !== currentUser?.id
+      ).slice(0, 6);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -77,6 +91,58 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
     }
   };
 
+  const handleInputChange = (e) => {
+    const value = e.target.value;
+    setNewMessage(value);
+
+    const query = getMentionQueryAtCursor(value, e.target.selectionStart);
+    setMentionQuery(query);
+    setActiveSuggestionIndex(0);
+  };
+
+  const applyMention = (username) => {
+    const input = inputRef.current;
+    if (!input) return;
+
+    const { nextValue, nextCursor } = insertMention(
+      newMessage,
+      input.selectionStart,
+      username
+    );
+
+    setNewMessage(nextValue);
+    setMentionQuery(null);
+    setActiveSuggestionIndex(0);
+
+    setTimeout(() => {
+      input.focus();
+      input.setSelectionRange(nextCursor, nextCursor);
+    }, 0);
+  };
+
+  const handleInputKeyDown = (e) => {
+    if (!mentionSuggestions.length) {
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveSuggestionIndex((prev) =>
+        prev + 1 >= mentionSuggestions.length ? 0 : prev + 1
+      );
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveSuggestionIndex((prev) =>
+        prev - 1 < 0 ? mentionSuggestions.length - 1 : prev - 1
+      );
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
+      e.preventDefault();
+      applyMention(mentionSuggestions[activeSuggestionIndex].username);
+    } else if (e.key === 'Escape') {
+      setMentionQuery(null);
+    }
+  };
+
   const handleSendMessage = async (e) => {
     e.preventDefault();
     
@@ -84,6 +150,7 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
 
     const messageToSend = newMessage.trim();
     setNewMessage('');
+    setMentionQuery(null);
 
     try {
       setIsSending(true);
@@ -148,6 +215,11 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
     return grouped;
   };
 
+  const messageMentionsCurrentUser = (message) =>
+    (message.mentions || []).some(
+      (mention) => Number(mention.user_id) === Number(currentUser?.id)
+    );
+
   if (!isOpen) return null;
 
   const groupedMessages = groupMessagesByDate(messages);
@@ -188,10 +260,11 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
                 </div>
                 {msgs.map((msg) => {
                   const isOwn = msg.user_id === currentUser?.id;
+                  const mentionsYou = messageMentionsCurrentUser(msg);
                   return (
                     <div
                       key={msg.id}
-                      className={`${styles.messageWrapper} ${isOwn ? styles.ownMessage : ''}`}
+                      className={`${styles.messageWrapper} ${isOwn ? styles.ownMessage : ''} ${mentionsYou ? styles.mentionedMessage : ''}`}
                     >
                       {!isOwn && (
                         <UserAvatar
@@ -205,7 +278,18 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
                         {!isOwn && (
                           <div className={styles.messageAuthor}>{msg.username}</div>
                         )}
-                        <div className={styles.messageContent}>{msg.content}</div>
+                        {mentionsYou && !isOwn && (
+                          <div className={styles.mentionedYouLabel}>mentioned you</div>
+                        )}
+                        <div className={styles.messageContent}>
+                          {renderMessageWithMentions(
+                            msg.content,
+                            msg.mentions,
+                            currentUser?.id,
+                            styles.mention,
+                            styles.mentionSelf
+                          )}
+                        </div>
                         <div className={styles.messageTime}>{formatTime(msg.created_at)}</div>
                       </div>
                     </div>
@@ -227,16 +311,36 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
           >
             Close
           </button>
-          <input
-            ref={inputRef}
-            type="text"
-            className={styles.messageInput}
-            placeholder="Type a message..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            disabled={isSending}
-            maxLength={2000}
-          />
+          <div className={styles.inputWrapper}>
+            {mentionSuggestions.length > 0 && (
+              <div className={styles.mentionSuggestions}>
+                {mentionSuggestions.map((member, index) => (
+                  <button
+                    key={member.user_id}
+                    type="button"
+                    className={`${styles.mentionSuggestion} ${index === activeSuggestionIndex ? styles.mentionSuggestionActive : ''}`}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      applyMention(member.username);
+                    }}
+                  >
+                    @{member.username}
+                  </button>
+                ))}
+              </div>
+            )}
+            <input
+              ref={inputRef}
+              type="text"
+              className={styles.messageInput}
+              placeholder="Type a message... use @username to mention"
+              value={newMessage}
+              onChange={handleInputChange}
+              onKeyDown={handleInputKeyDown}
+              disabled={isSending}
+              maxLength={2000}
+            />
+          </div>
           <button
             type="submit"
             className={styles.sendButton}
@@ -251,4 +355,3 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
 }
 
 export default ChatPanel;
-
