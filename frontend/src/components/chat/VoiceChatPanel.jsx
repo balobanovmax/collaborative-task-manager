@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import styles from './VoiceChatPanel.module.css';
 import UserAvatar from '../common/UserAvatar';
+import ResizableWindow from '../common/ResizableWindow';
 import { MicStatusIcon, CameraStatusIcon, MicOnIcon, MicOffIcon, CameraOnIcon, CameraOffIcon } from './VoiceIcons';
 
 function VideoTile({ participant, stream, isLocal = false, micEnabled, cameraEnabled }) {
@@ -74,7 +75,9 @@ function VoiceChatPanel({
   micEnabled,
   cameraEnabled,
   onToggleMic,
-  onToggleCamera
+  onToggleCamera,
+  zIndex = 1001,
+  onFocus
 }) {
   const getParticipantMeta = (userId) => {
     const rosterEntry = participants.find((p) => Number(p.user_id) === Number(userId));
@@ -106,28 +109,22 @@ function VoiceChatPanel({
   );
 
   return (
-    <div className={styles.overlay} onClick={onMinimize}>
-      <div className={styles.panel} onClick={(event) => event.stopPropagation()}>
-        <div className={styles.header}>
-          <div>
-            <h3 className={styles.title}>Voice & Video Chat</h3>
-            <p className={styles.subtitle}>
-              {isInVoice
-                ? `${participants.length} teammate${participants.length === 1 ? '' : 's'} in voice · you can minimize and keep working`
-                : 'Connecting...'}
-            </p>
-          </div>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={onMinimize}
-            title="Minimize (stay in voice)"
-            aria-label="Minimize voice chat panel"
-          >
-            ×
-          </button>
-        </div>
-
+    <ResizableWindow
+      isOpen={isOpen}
+      onClose={onMinimize}
+      title="Voice & Video Chat"
+      subtitle={
+        isInVoice
+          ? `${participants.length} teammate${participants.length === 1 ? '' : 's'} in voice · you can minimize and keep working`
+          : 'Connecting...'
+      }
+      defaultPosition={{ x: 500, y: 88 }}
+      defaultSize={{ width: 480, height: 620 }}
+      zIndex={zIndex}
+      onFocus={onFocus}
+      ariaLabel="Voice and video chat"
+    >
+      <div className={styles.panel}>
         <div className={styles.participantList}>
           <span className={styles.participantListTitle}>In voice now</span>
           {participants.length === 0 ? (
@@ -201,7 +198,7 @@ function VoiceChatPanel({
           </button>
         </div>
       </div>
-    </div>
+    </ResizableWindow>
   );
 }
 

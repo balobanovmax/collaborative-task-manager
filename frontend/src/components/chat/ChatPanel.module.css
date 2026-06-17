@@ -1,80 +1,8 @@
-.chatOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--overlay-light);
-  z-index: 999;
-}
-
 .chatPanel {
-  position: fixed;
-  right: 0;
-  top: 0;
-  width: 360px;
-  height: 100vh;
-  background: var(--bg-surface);
-  border-left: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
-  z-index: 1000;
-  box-shadow: -2px 0 8px var(--shadow-sm);
-}
-
-.chatHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 20px;
-  background: var(--bg-page);
-  border-bottom: 1px solid var(--border-light);
-}
-
-.chatTitle {
-  margin: 0;
-  font-size: 16px;
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.headerButtons {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.clearChatButton {
-  background: var(--danger-alt);
-  border: none;
-  color: var(--text-inverse);
-  font-size: 12px;
-  cursor: pointer;
-  padding: 4px 10px;
-  border-radius: 2px;
-}
-
-.clearChatButton:hover:not(:disabled) {
-  background: var(--danger-alt-hover);
-}
-
-.clearChatButton:disabled {
-  background: var(--bg-disabled);
-  cursor: not-allowed;
-}
-
-.closeButton {
-  background: none;
-  border: none;
-  color: var(--text-subtle);
-  font-size: 20px;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-}
-
-.closeButton:hover {
-  color: var(--text-primary);
+  height: 100%;
+  min-height: 0;
 }
 
 .messagesContainer {
@@ -279,21 +207,6 @@
   background: var(--bg-input-disabled);
 }
 
-.closeChatButton {
-  padding: 10px 16px;
-  background: var(--secondary-text);
-  color: var(--text-inverse);
-  border: none;
-  border-radius: 2px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.closeChatButton:hover {
-  background: var(--secondary-muted-hover);
-}
-
 .sendButton {
   padding: 10px 20px;
   background: var(--primary);
@@ -314,8 +227,105 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .chatPanel {
-    width: 100%;
-  }
+.micButton {
+  min-width: 42px;
+  padding: 0 10px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.micButton:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.micButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.micButtonActive {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger-hover);
+}
+
+.recordingBar,
+.voicePreviewBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--bg-page);
+  border-top: 1px solid var(--border-light);
+}
+
+.recordingDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--danger-hover);
+  animation: recordingPulse 1s ease-in-out infinite;
+}
+
+@keyframes recordingPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.recordingLabel {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.stopRecordingButton,
+.discardVoiceButton,
+.sendVoiceButton {
+  border: none;
+  border-radius: 2px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.stopRecordingButton,
+.discardVoiceButton {
+  background: var(--secondary-text);
+  color: var(--text-inverse);
+}
+
+.sendVoiceButton {
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+.stopRecordingButton:hover,
+.discardVoiceButton:hover,
+.sendVoiceButton:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.sendVoiceButton:disabled,
+.discardVoiceButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.voicePreviewAudio {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+}
+
+.voicePreviewDuration {
+  font-size: 12px;
+  color: var(--text-subtle);
+  white-space: nowrap;
 }

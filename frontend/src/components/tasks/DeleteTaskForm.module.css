@@ -75,12 +75,19 @@
   text-transform: capitalize;
 }
 
-.statusBadge.pending {
+.statusBadge.pending,
+.statusBadge.todo {
   background-color: var(--warning-bg);
   color: var(--warning-text);
 }
 
-.statusBadge.completed {
+.statusBadge.doing {
+  background-color: var(--status-progress-bg);
+  color: var(--status-progress-text);
+}
+
+.statusBadge.completed,
+.statusBadge.done {
   background-color: var(--success-dark-bg);
   color: var(--success-dark-text);
 }

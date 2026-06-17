@@ -125,7 +125,7 @@ export const removeUserFromGroup = async (userId, groupId, requesterId = null) =
         if (userId === group.owner_id && isUserLeavingVoluntarily) {
             const memberCount = await getMemberCount(groupId);
             if (memberCount > 1) {
-                throw new Error('Group owner cannot leave while other members exist. Transfer ownership or remove all members first.');
+                throw new Error('Transfer ownership to another member before leaving the group.');
             }
         }
 

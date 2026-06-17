@@ -1,0 +1,73 @@
+.player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 210px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.playerOwn {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.playButton {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: var(--text-inverse);
+  cursor: pointer;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.playerOwn .playButton {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--primary);
+}
+
+.track {
+  flex: 1;
+  min-width: 0;
+}
+
+.progressBar {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.playerOwn .progressBar {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.1s linear;
+}
+
+.playerOwn .progressFill {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.duration {
+  font-size: 11px;
+  color: var(--text-subtle);
+}
+
+.playerOwn .duration {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.hiddenAudio {
+  display: none;
+}

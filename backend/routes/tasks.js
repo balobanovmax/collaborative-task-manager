@@ -6,7 +6,8 @@ import {
     getTasksByGroup, 
     updateTask, 
     deleteTask, 
-    toggleTaskCompletion 
+    toggleTaskCompletion,
+    updateTaskStatus
 } from '../models/Task.js';
 import { createTaskComment, getCommentsByTask } from '../models/TaskComment.js';
 import {
@@ -612,6 +613,49 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
     } catch (error) {
         console.error('Error fetching group tasks:', error);
         
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('not a member') || error.message.includes('permission')) {
+            statusCode = 403;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.patch('/:id/status', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id, 10);
+        const userId = req.userId;
+        const { status } = req.body;
+
+        if (isNaN(taskId) || taskId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid task ID. Must be a positive number.'
+            });
+        }
+
+        const result = await updateTaskStatus(taskId, userId, status);
+
+        emitTaskUpdated(result.task.group_id, result.task);
+        emitTaskToggled(result.task.group_id, result.task);
+
+        res.json({
+            success: true,
+            message: result.message,
+            action: result.action,
+            data: {
+                task: result.task
+            }
+        });
+    } catch (error) {
+        console.error('Error updating task status:', error);
+
         let statusCode = 400;
         if (error.message.includes('not found')) {
             statusCode = 404;

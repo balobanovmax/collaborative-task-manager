@@ -1,6 +1,6 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { createGroup, findGroupById, deleteGroup, updateGroup } from '../models/Group.js';
+import { createGroup, findGroupById, deleteGroup, updateGroup, transferGroupOwnership } from '../models/Group.js';
 import { getMemberCount, addUserToGroup, getGroupMembers, removeUserFromGroup, isUserMember } from '../models/GroupMember.js';
 import {
     getJoinPreview,
@@ -438,7 +438,30 @@ router.delete('/:id/leave', requireAuth, async (req, res) => {
         
         // Get user ID from auth middleware
         const userId = req.userId;
-        
+        const transferToUserId = req.body?.transfer_to_user_id
+            ? parseInt(req.body.transfer_to_user_id, 10)
+            : null;
+
+        if (req.body?.transfer_to_user_id && (isNaN(transferToUserId) || transferToUserId <= 0)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid transfer_to_user_id. Must be a positive number.'
+            });
+        }
+
+        const group = await findGroupById(groupId);
+        if (!group) {
+            return res.status(404).json({
+                success: false,
+                message: 'Group not found'
+            });
+        }
+
+        if (group.owner_id === userId && transferToUserId) {
+            await transferGroupOwnership(groupId, userId, transferToUserId);
+            emitGroupUpdated(groupId);
+        }
+
         const result = await removeUserFromGroup(userId, groupId);
         
         emitMemberRemoved(groupId, userId);
@@ -459,7 +482,9 @@ router.delete('/:id/leave', requireAuth, async (req, res) => {
             statusCode = 404; // Not Found
         } else if (error.message.includes('not a member')) {
             statusCode = 409; // Conflict
-        } else if (error.message.includes('cannot remove the group owner')) {
+        } else if (error.message.includes('cannot remove the group owner') ||
+                   error.message.includes('Transfer ownership') ||
+                   error.message.includes('transfer ownership')) {
             statusCode = 403; // Forbidden
         }
         

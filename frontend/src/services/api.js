@@ -152,6 +152,14 @@ export const groupAPI = {
   reviewJoinRequest: async (groupId, requestId, action) => {
     const response = await api.patch(`/groups/${groupId}/join-requests/${requestId}`, { action });
     return response.data;
+  },
+
+  leaveGroup: async (groupId, transferToUserId = null) => {
+    const config = transferToUserId
+      ? { data: { transfer_to_user_id: transferToUserId } }
+      : undefined;
+    const response = await api.delete(`/groups/${groupId}/leave`, config);
+    return response.data;
   }
 };
 
@@ -196,6 +204,11 @@ export const taskAPI = {
 
   deleteTask: async (taskId) => {
     const response = await api.delete(`/tasks/${taskId}`);
+    return response.data;
+  },
+
+  updateTaskStatus: async (taskId, status) => {
+    const response = await api.patch(`/tasks/${taskId}/status`, { status });
     return response.data;
   },
 
@@ -278,6 +291,20 @@ export const messageAPI = {
 
   clearChat: async (groupId) => {
     const response = await api.delete(`/messages/group/${groupId}`);
+    return response.data;
+  },
+
+  sendVoiceMessage: async (groupId, audioBlob, durationSeconds, filename = 'voice-message.webm') => {
+    const formData = new FormData();
+    formData.append('voice', audioBlob, filename);
+    formData.append('group_id', String(groupId));
+    formData.append('duration_seconds', String(durationSeconds));
+
+    const response = await api.post('/messages/voice', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
     return response.data;
   }
 };

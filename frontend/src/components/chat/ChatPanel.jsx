@@ -8,19 +8,35 @@ import {
   getMentionQueryAtCursor,
   insertMention
 } from '../../utils/renderMentions';
+import {
+  MAX_VOICE_MESSAGE_SECONDS,
+  getRecordingMimeType,
+  getExtensionForMimeType,
+  formatVoiceDuration
+} from '../../utils/voiceMessage';
 import UserAvatar from '../common/UserAvatar';
+import ResizableWindow from '../common/ResizableWindow';
+import VoiceMessagePlayer from './VoiceMessagePlayer';
 
-function ChatPanel({ groupId, isOpen, onClose, isOwner, members = [] }) {
+function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFocus }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
-  const [isClearing, setIsClearing] = useState(false);
   const [error, setError] = useState('');
   const [mentionQuery, setMentionQuery] = useState(null);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [voicePreview, setVoicePreview] = useState(null);
+  const [isSendingVoice, setIsSendingVoice] = useState(false);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordingStreamRef = useRef(null);
+  const recordingChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const voicePreviewRef = useRef(null);
   const currentUser = getUser();
 
   const mentionSuggestions = mentionQuery === null
@@ -46,6 +62,31 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner, members = [] }) {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  useEffect(() => {
+    voicePreviewRef.current = voicePreview;
+  }, [voicePreview]);
+
+  useEffect(() => {
+    return () => {
+      stopRecordingTimer();
+      cleanupRecordingStream();
+      revokeVoicePreview(voicePreviewRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      return undefined;
+    }
+
+    stopRecordingTimer();
+    cleanupRecordingStream();
+    revokeVoicePreview(voicePreviewRef.current);
+    setVoicePreview(null);
+    setIsRecording(false);
+    setRecordingSeconds(0);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -167,19 +208,160 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner, members = [] }) {
     }
   };
 
-  const handleClearChat = async () => {
-    if (!confirm('Are you sure you want to clear all messages? This cannot be undone.')) {
+  const stopRecordingTimer = () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  };
+
+  const cleanupRecordingStream = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    mediaRecorderRef.current = null;
+
+    if (recordingStreamRef.current) {
+      recordingStreamRef.current.getTracks().forEach((track) => track.stop());
+      recordingStreamRef.current = null;
+    }
+
+    recordingChunksRef.current = [];
+  };
+
+  const revokeVoicePreview = (preview) => {
+    if (preview?.url) {
+      URL.revokeObjectURL(preview.url);
+    }
+  };
+
+  const handleCancelVoicePreview = () => {
+    revokeVoicePreview(voicePreview);
+    setVoicePreview(null);
+  };
+
+  const finalizeRecording = () => {
+    stopRecordingTimer();
+    setIsRecording(false);
+
+    const mimeType = mediaRecorderRef.current?.mimeType || getRecordingMimeType();
+    const blob = new Blob(recordingChunksRef.current, { type: mimeType || 'audio/webm' });
+
+    cleanupRecordingStream();
+
+    if (!blob.size) {
+      setError('Recording was empty. Try again.');
+      setRecordingSeconds(0);
+      return;
+    }
+
+    revokeVoicePreview(voicePreview);
+    setVoicePreview({
+      blob,
+      url: URL.createObjectURL(blob),
+      duration: recordingSeconds,
+      mimeType: blob.type
+    });
+    setRecordingSeconds(0);
+  };
+
+  const handleStartRecording = async () => {
+    if (isRecording || isSending || isSendingVoice || voicePreview) {
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError('Voice recording is not supported in this browser.');
+      return;
+    }
+
+    const mimeType = getRecordingMimeType();
+    if (!mimeType) {
+      setError('Voice recording is not supported in this browser.');
       return;
     }
 
     try {
-      setIsClearing(true);
       setError('');
-      await messageAPI.clearChat(groupId);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordingStreamRef.current = stream;
+      recordingChunksRef.current = [];
+
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordingChunksRef.current.push(event.data);
+        }
+      };
+
+      recorder.onstop = () => {
+        finalizeRecording();
+      };
+
+      recorder.start();
+      setIsRecording(true);
+      setRecordingSeconds(0);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => {
+          if (prev + 1 >= MAX_VOICE_MESSAGE_SECONDS) {
+            stopRecordingTimer();
+            if (mediaRecorderRef.current?.state === 'recording') {
+              mediaRecorderRef.current.stop();
+            }
+            return MAX_VOICE_MESSAGE_SECONDS;
+          }
+          return prev + 1;
+        });
+      }, 1000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to clear chat');
+      cleanupRecordingStream();
+      setIsRecording(false);
+      setRecordingSeconds(0);
+      setError('Microphone access is required to record voice messages.');
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (!isRecording || !mediaRecorderRef.current) {
+      return;
+    }
+
+    stopRecordingTimer();
+
+    if (mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      return;
+    }
+
+    finalizeRecording();
+  };
+
+  const handleSendVoiceMessage = async () => {
+    if (!voicePreview || isSendingVoice) {
+      return;
+    }
+
+    const extension = getExtensionForMimeType(voicePreview.mimeType);
+    const filename = `voice-message.${extension}`;
+
+    try {
+      setIsSendingVoice(true);
+      setError('');
+      await messageAPI.sendVoiceMessage(
+        groupId,
+        voicePreview.blob,
+        voicePreview.duration,
+        filename
+      );
+      revokeVoicePreview(voicePreview);
+      setVoicePreview(null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send voice message');
     } finally {
-      setIsClearing(false);
+      setIsSendingVoice(false);
     }
   };
 
@@ -220,31 +402,20 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner, members = [] }) {
       (mention) => Number(mention.user_id) === Number(currentUser?.id)
     );
 
-  if (!isOpen) return null;
-
   const groupedMessages = groupMessagesByDate(messages);
 
   return (
-    <div className={styles.chatOverlay} onClick={onClose}>
-      <div className={styles.chatPanel} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.chatHeader}>
-          <h3 className={styles.chatTitle}>Text Chat</h3>
-          <div className={styles.headerButtons}>
-            {isOwner && (
-              <button 
-                className={styles.clearChatButton} 
-                onClick={handleClearChat}
-                disabled={isClearing || messages.length === 0}
-              >
-                {isClearing ? '...' : 'Clear'}
-              </button>
-            )}
-            <button className={styles.closeButton} onClick={onClose}>
-              ×
-            </button>
-          </div>
-        </div>
-
+    <ResizableWindow
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Text Chat"
+      defaultPosition={{ x: 96, y: 88 }}
+      defaultSize={{ width: 380, height: 560 }}
+      zIndex={zIndex}
+      onFocus={onFocus}
+      ariaLabel="Text chat"
+    >
+      <div className={styles.chatPanel}>
         <div className={styles.messagesContainer}>
           {isLoading ? (
             <div className={styles.loadingState}>Loading messages...</div>
@@ -282,12 +453,20 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner, members = [] }) {
                           <div className={styles.mentionedYouLabel}>mentioned you</div>
                         )}
                         <div className={styles.messageContent}>
-                          {renderMessageWithMentions(
-                            msg.content,
-                            msg.mentions,
-                            currentUser?.id,
-                            styles.mention,
-                            styles.mentionSelf
+                          {msg.message_type === 'voice' && msg.voice_url ? (
+                            <VoiceMessagePlayer
+                              src={msg.voice_url}
+                              durationSeconds={msg.voice_duration_seconds}
+                              isOwn={isOwn}
+                            />
+                          ) : (
+                            renderMessageWithMentions(
+                              msg.content,
+                              msg.mentions,
+                              currentUser?.id,
+                              styles.mention,
+                              styles.mentionSelf
+                            )
                           )}
                         </div>
                         <div className={styles.messageTime}>{formatTime(msg.created_at)}</div>
@@ -303,14 +482,52 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner, members = [] }) {
 
         {error && <div className={styles.errorMessage}>{error}</div>}
 
+        {isRecording && (
+          <div className={styles.recordingBar}>
+            <span className={styles.recordingDot} aria-hidden="true" />
+            <span className={styles.recordingLabel}>
+              Recording {formatVoiceDuration(recordingSeconds)}
+            </span>
+            <button
+              type="button"
+              className={styles.stopRecordingButton}
+              onClick={handleStopRecording}
+            >
+              Stop
+            </button>
+          </div>
+        )}
+
+        {voicePreview && !isRecording && (
+          <div className={styles.voicePreviewBar}>
+            <audio
+              src={voicePreview.url}
+              controls
+              className={styles.voicePreviewAudio}
+            />
+            <span className={styles.voicePreviewDuration}>
+              {formatVoiceDuration(voicePreview.duration)}
+            </span>
+            <button
+              type="button"
+              className={styles.discardVoiceButton}
+              onClick={handleCancelVoicePreview}
+              disabled={isSendingVoice}
+            >
+              Discard
+            </button>
+            <button
+              type="button"
+              className={styles.sendVoiceButton}
+              onClick={handleSendVoiceMessage}
+              disabled={isSendingVoice}
+            >
+              {isSendingVoice ? '...' : 'Send voice'}
+            </button>
+          </div>
+        )}
+
         <form className={styles.inputContainer} onSubmit={handleSendMessage}>
-          <button
-            type="button"
-            className={styles.closeChatButton}
-            onClick={onClose}
-          >
-            Close
-          </button>
           <div className={styles.inputWrapper}>
             {mentionSuggestions.length > 0 && (
               <div className={styles.mentionSuggestions}>
@@ -337,20 +554,30 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner, members = [] }) {
               value={newMessage}
               onChange={handleInputChange}
               onKeyDown={handleInputKeyDown}
-              disabled={isSending}
+              disabled={isSending || isRecording || isSendingVoice}
               maxLength={2000}
             />
           </div>
           <button
+            type="button"
+            className={`${styles.micButton} ${isRecording ? styles.micButtonActive : ''}`}
+            onClick={isRecording ? handleStopRecording : handleStartRecording}
+            disabled={isSending || isSendingVoice || Boolean(voicePreview)}
+            aria-label={isRecording ? 'Stop recording' : 'Record voice message'}
+            title={isRecording ? 'Stop recording' : 'Record voice message'}
+          >
+            {isRecording ? 'Stop' : 'Rec'}
+          </button>
+          <button
             type="submit"
             className={styles.sendButton}
-            disabled={!newMessage.trim() || isSending}
+            disabled={!newMessage.trim() || isSending || isRecording || isSendingVoice}
           >
             {isSending ? '...' : 'Send'}
           </button>
         </form>
       </div>
-    </div>
+    </ResizableWindow>
   );
 }
 

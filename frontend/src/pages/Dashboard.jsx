@@ -67,7 +67,7 @@ function Dashboard() {
 
             <button 
               className={styles.actionButton}
-              onClick={() => navigate('/settings')}
+              onClick={() => navigate('/settings', { state: { returnTo: '/dashboard' } })}
             >
               Profile Settings
             </button>

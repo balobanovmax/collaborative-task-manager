@@ -1,7 +1,8 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { createMessage, getMessagesByGroup, deleteAllMessagesByGroup } from '../models/Message.js';
+import { createMessage, createVoiceMessage, getMessagesByGroup, deleteAllMessagesByGroup } from '../models/Message.js';
 import { emitMessageSent, emitChatCleared } from '../utils/socket.js';
+import { uploadVoiceMessage } from '../middleware/uploadVoiceMessage.js';
 
 const router = express.Router();
 
@@ -37,6 +38,54 @@ router.post('/', requireAuth, async (req, res) => {
 
     } catch (error) {
         console.error('Error sending message:', error);
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('must be a member')) {
+            statusCode = 403;
+        }
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.post('/voice', requireAuth, uploadVoiceMessage.single('voice'), async (req, res) => {
+    try {
+        const userId = req.userId;
+        const groupId = parseInt(req.body.group_id, 10);
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Voice recording is required.'
+            });
+        }
+
+        if (isNaN(groupId) || groupId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid group ID.'
+            });
+        }
+
+        const message = await createVoiceMessage(
+            groupId,
+            userId,
+            req.file,
+            req.body.duration_seconds
+        );
+
+        emitMessageSent(groupId, message);
+
+        res.status(201).json({
+            success: true,
+            message: 'Voice message sent successfully',
+            data: { message }
+        });
+    } catch (error) {
+        console.error('Error sending voice message:', error);
         let statusCode = 400;
         if (error.message.includes('not found')) {
             statusCode = 404;

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './Settings.module.css';
 import Navbar from '../components/common/Navbar';
 import UserAvatar from '../components/common/UserAvatar';
@@ -8,6 +8,7 @@ import { getUser, updateStoredUser } from '../utils/auth';
 
 function Settings() {
   const navigate = useNavigate();
+  const location = useLocation();
   const fileInputRef = useRef(null);
   const initialUser = getUser();
 
@@ -207,12 +208,21 @@ function Settings() {
 
   const displayAvatarUrl = previewUrl || profilePictureUrl;
 
+  const handleBack = () => {
+    const returnTo = location.state?.returnTo;
+    if (returnTo && returnTo !== '/settings') {
+      navigate(returnTo);
+      return;
+    }
+    navigate(-1);
+  };
+
   return (
     <>
       <Navbar />
       <div className={styles.container}>
-        <button onClick={() => navigate('/dashboard')} className={styles.backButton}>
-          ← Back to Dashboard
+        <button type="button" onClick={handleBack} className={styles.backButton}>
+          ← Back
         </button>
 
         <div className={styles.card}>

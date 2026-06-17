@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createVoiceChatSession } from '../services/voiceChat';
 import { onVoiceRosterUpdated } from '../services/socket';
+import { playLeaveVoiceSound } from '../utils/voiceSounds';
 
 export function useVoiceChat(groupId, user) {
   const sessionRef = useRef(null);
@@ -24,11 +25,15 @@ export function useVoiceChat(groupId, user) {
     setError('');
   }, []);
 
-  const leave = useCallback(() => {
+  const leave = useCallback(({ playSound = false } = {}) => {
+    const wasInVoice = isInVoice;
     sessionRef.current?.leave();
     sessionRef.current = null;
     resetState();
-  }, [resetState]);
+    if (wasInVoice && playSound) {
+      playLeaveVoiceSound();
+    }
+  }, [resetState, isInVoice]);
 
   const join = useCallback(async () => {
     if (!groupId || !user?.id || isConnecting || isInVoice) {

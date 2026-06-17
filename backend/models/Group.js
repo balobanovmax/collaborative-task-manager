@@ -403,4 +403,55 @@ export const updateGroup = async (groupId, ownerId, updateData) => {
     }
 };
 
+export const transferGroupOwnership = async (groupId, currentOwnerId, newOwnerId) => {
+    try {
+        if (!groupId || typeof groupId !== 'number' || groupId <= 0) {
+            throw new Error('Valid group ID is required');
+        }
+
+        if (!currentOwnerId || typeof currentOwnerId !== 'number' || currentOwnerId <= 0) {
+            throw new Error('Valid owner ID is required');
+        }
+
+        if (!newOwnerId || typeof newOwnerId !== 'number' || newOwnerId <= 0) {
+            throw new Error('Valid new owner ID is required');
+        }
+
+        if (currentOwnerId === newOwnerId) {
+            throw new Error('New owner must be a different group member');
+        }
+
+        const group = await findGroupById(groupId);
+        if (!group) {
+            throw new Error('Group not found');
+        }
+
+        if (group.owner_id !== currentOwnerId) {
+            throw new Error('Only the group owner can transfer ownership');
+        }
+
+        const { isUserMember } = await import('./GroupMember.js');
+        const newOwnerIsMember = await isUserMember(newOwnerId, groupId);
+        if (!newOwnerIsMember) {
+            throw new Error('New owner must be an existing group member');
+        }
+
+        const result = await pool.query(`
+            UPDATE groups
+            SET owner_id = $1
+            WHERE id = $2 AND owner_id = $3
+            RETURNING id, name, owner_id, description, is_public, created_at
+        `, [newOwnerId, groupId, currentOwnerId]);
+
+        if (result.rows.length === 0) {
+            throw new Error('Failed to transfer group ownership');
+        }
+
+        return result.rows[0];
+    } catch (error) {
+        console.error('Error transferring group ownership:', error);
+        throw error;
+    }
+};
+
 

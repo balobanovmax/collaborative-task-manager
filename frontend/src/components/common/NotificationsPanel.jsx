@@ -131,12 +131,12 @@ function NotificationsPanel() {
     <div className={styles.container} ref={panelRef}>
       <button
         type="button"
-        className={styles.bellButton}
+        className={styles.notificationsButton}
         onClick={handleToggle}
         aria-label="Notifications"
         title="Notifications"
       >
-        🔔
+        Notifications
         {unreadCount > 0 && (
           <span className={styles.badge}>
             {unreadCount > 99 ? '99+' : unreadCount}

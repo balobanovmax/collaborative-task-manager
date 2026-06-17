@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styles from './DeleteTaskForm.module.css';
 import { taskAPI } from '../../services/api';
+import { getTaskStatus, getStatusLabel } from '../../utils/taskStatus';
 
 function DeleteTaskForm({ tasks, onSuccess, onCancel }) {
   const [selectedTask, setSelectedTask] = useState(null);
@@ -111,8 +112,8 @@ function DeleteTaskForm({ tasks, onSuccess, onCancel }) {
           >
             <div className={styles.taskItemHeader}>
               <h3 className={styles.taskItemTitle}>{task.title}</h3>
-              <span className={`${styles.statusBadge} ${task.is_completed ? styles.completed : styles.pending}`}>
-                {task.is_completed ? 'Completed' : 'Pending'}
+              <span className={`${styles.statusBadge} ${styles[getTaskStatus(task)]}`}>
+                {getStatusLabel(getTaskStatus(task))}
               </span>
             </div>
             {task.description && (

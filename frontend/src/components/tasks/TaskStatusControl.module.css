@@ -1,0 +1,41 @@
+.statusButton {
+  border: none;
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.statusButton:hover:not(:disabled) {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+
+.statusButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.compact {
+  padding: 3px 8px;
+  font-size: 10px;
+}
+
+.todo {
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.doing {
+  background-color: var(--status-progress-bg);
+  color: var(--status-progress-text);
+}
+
+.done {
+  background-color: var(--success-dark-bg);
+  color: var(--success-dark-text);
+}

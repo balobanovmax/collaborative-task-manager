@@ -6,17 +6,21 @@ import TaskManagementModal from '../components/tasks/TaskManagementModal';
 import TaskCommentThread from '../components/tasks/TaskCommentThread';
 import TaskAttachments from '../components/tasks/TaskAttachments';
 import TaskDrawings from '../components/tasks/TaskDrawings';
+import TaskKanbanBoard from '../components/tasks/TaskKanbanBoard';
+import TaskStatusControl from '../components/tasks/TaskStatusControl';
 import ConfirmModal from '../components/common/ConfirmModal';
 import MemberProfileModal from '../components/groups/MemberProfileModal';
+import LeaveGroupModal from '../components/groups/LeaveGroupModal';
 import ChatPanel from '../components/chat/ChatPanel';
 import VoiceChatPanel from '../components/chat/VoiceChatPanel';
 import VoiceChatDock from '../components/chat/VoiceChatDock';
 import VoiceRemoteAudio from '../components/chat/VoiceRemoteAudio';
 import { MicStatusIcon, CameraStatusIcon } from '../components/chat/VoiceIcons';
 import UserAvatar from '../components/common/UserAvatar';
-import { groupAPI, userAPI } from '../services/api';
+import { groupAPI, userAPI, taskAPI } from '../services/api';
 import { getUser } from '../utils/auth';
 import { useVoiceChat } from '../hooks/useVoiceChat';
+import { getTaskStatus } from '../utils/taskStatus';
 import {
   connectSocket,
   joinGroup,
@@ -70,6 +74,9 @@ function GroupView() {
   const [removedMessage, setRemovedMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isVoiceChatOpen, setIsVoiceChatOpen] = useState(false);
+  const [textChatZ, setTextChatZ] = useState(1000);
+  const [voiceChatZ, setVoiceChatZ] = useState(1001);
+  const nextWindowZRef = useRef(1001);
   const [voiceParticipants, setVoiceParticipants] = useState([]);
   const voiceChat = useVoiceChat(parseInt(groupId, 10), currentUser);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
@@ -85,13 +92,19 @@ function GroupView() {
   const [editError, setEditError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [taskViewMode, setTaskViewMode] = useState('list');
+  const [isUpdatingTaskStatus, setIsUpdatingTaskStatus] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [joinRequests, setJoinRequests] = useState([]);
   const [isJoinRequestsExpanded, setIsJoinRequestsExpanded] = useState(true);
   const [reviewingRequestId, setReviewingRequestId] = useState(null);
+  const [isLeaveGroupModalOpen, setIsLeaveGroupModalOpen] = useState(false);
+  const [isLeavingGroup, setIsLeavingGroup] = useState(false);
+  const [leaveGroupError, setLeaveGroupError] = useState('');
 
   useEffect(() => {
     setAssigneeFilter('all');
+    setTaskViewMode('list');
     setSelectedMember(null);
     setJoinRequests([]);
   }, [groupId]);
@@ -188,11 +201,70 @@ function GroupView() {
       }
     }
     setIsVoiceChatOpen(true);
+    focusVoiceChatWindow();
   };
 
   const handleLeaveVoiceChat = () => {
-    voiceChat.leave();
+    voiceChat.leave({ playSound: true });
     setIsVoiceChatOpen(false);
+  };
+
+  const focusTextChatWindow = () => {
+    nextWindowZRef.current += 1;
+    setTextChatZ(nextWindowZRef.current);
+  };
+
+  const focusVoiceChatWindow = () => {
+    nextWindowZRef.current += 1;
+    setVoiceChatZ(nextWindowZRef.current);
+  };
+
+  const openTextChat = () => {
+    setIsChatOpen(true);
+    focusTextChatWindow();
+    setUnreadMessageCount(0);
+    setUnreadMentionCount(0);
+  };
+
+  const openVoiceChatPanel = () => {
+    setIsVoiceChatOpen(true);
+    focusVoiceChatWindow();
+  };
+
+  const openLeaveGroupModal = () => {
+    setLeaveGroupError('');
+    setIsLeaveGroupModalOpen(true);
+  };
+
+  const closeLeaveGroupModal = () => {
+    if (isLeavingGroup) {
+      return;
+    }
+    setLeaveGroupError('');
+    setIsLeaveGroupModalOpen(false);
+  };
+
+  const handleLeaveGroup = async (transferToUserId = null) => {
+    try {
+      setIsLeavingGroup(true);
+      setLeaveGroupError('');
+
+      if (voiceChat.isInVoice) {
+        voiceChat.leave({ playSound: false });
+        setIsVoiceChatOpen(false);
+      }
+
+      await groupAPI.leaveGroup(parseInt(groupId, 10), transferToUserId);
+      leaveGroup(parseInt(groupId, 10));
+      setIsLeaveGroupModalOpen(false);
+      navigate('/my-groups', {
+        state: { message: 'You left the group successfully.' }
+      });
+    } catch (error) {
+      setLeaveGroupError(error.response?.data?.message || 'Failed to leave group. Please try again.');
+    } finally {
+      setIsLeavingGroup(false);
+    }
   };
 
   useEffect(() => {
@@ -433,6 +505,31 @@ function GroupView() {
           : task
       )
     );
+  };
+
+  const handleTaskStatusChange = async (taskId, nextStatus) => {
+    const task = tasks.find((entry) => Number(entry.id) === Number(taskId));
+    if (!task || getTaskStatus(task) === nextStatus || isUpdatingTaskStatus) {
+      return;
+    }
+
+    setIsUpdatingTaskStatus(true);
+
+    try {
+      const response = await taskAPI.updateTaskStatus(taskId, nextStatus);
+      const updatedTask = response.data?.task;
+
+      if (updatedTask) {
+        setTasks((prevTasks) =>
+          prevTasks.map((entry) => (entry.id === updatedTask.id ? updatedTask : entry))
+        );
+      }
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message || 'Failed to update task status.');
+      setTimeout(() => setErrorMessage(''), 3000);
+    } finally {
+      setIsUpdatingTaskStatus(false);
+    }
   };
 
   const handleRemoveMember = (memberId, memberName) => {
@@ -768,14 +865,19 @@ function GroupView() {
                 </div>
               )}
             </div>
+
+            <button
+              type="button"
+              className={styles.leaveGroupButton}
+              onClick={openLeaveGroupModal}
+            >
+              Leave Group
+            </button>
+
             <div className={styles.chatButtons}>
               <button
                 className={`${styles.chatButton} ${unreadMessageCount > 0 ? styles.chatButtonNotification : ''} ${unreadMentionCount > 0 ? styles.chatButtonMention : ''}`}
-                onClick={() => {
-                  setIsChatOpen(true);
-                  setUnreadMessageCount(0);
-                  setUnreadMentionCount(0);
-                }}
+                onClick={openTextChat}
                 title={
                   unreadMessageCount > 0
                     ? `${unreadMessageCount} unread message${unreadMessageCount === 1 ? '' : 's'}${unreadMentionCount > 0 ? `, ${unreadMentionCount} mentioned you` : ''}`
@@ -850,12 +952,30 @@ function GroupView() {
                     ))}
                   </select>
                 </div>
-                <button 
-                  className={styles.manageTasksButton}
-                  onClick={() => setIsModalOpen(true)}
-                >
-                  Manage Tasks
-                </button>
+                <div className={styles.tasksHeaderActions}>
+                  <div className={styles.viewToggle}>
+                    <button
+                      type="button"
+                      className={`${styles.viewToggleButton} ${taskViewMode === 'list' ? styles.viewToggleButtonActive : ''}`}
+                      onClick={() => setTaskViewMode('list')}
+                    >
+                      List
+                    </button>
+                    <button
+                      type="button"
+                      className={`${styles.viewToggleButton} ${taskViewMode === 'kanban' ? styles.viewToggleButtonActive : ''}`}
+                      onClick={() => setTaskViewMode('kanban')}
+                    >
+                      Kanban
+                    </button>
+                  </div>
+                  <button 
+                    className={styles.manageTasksButton}
+                    onClick={() => setIsModalOpen(true)}
+                  >
+                    Manage Tasks
+                  </button>
+                </div>
               </div>
 
               {tasks.length === 0 ? (
@@ -866,18 +986,27 @@ function GroupView() {
                 <div className={styles.emptyState}>
                   <p>No tasks match this assignee filter.</p>
                 </div>
+              ) : taskViewMode === 'kanban' ? (
+                <TaskKanbanBoard
+                  tasks={filteredTasks}
+                  onStatusChange={handleTaskStatusChange}
+                  getTaskAssignee={getTaskAssignee}
+                  isUpdating={isUpdatingTaskStatus}
+                />
               ) : (
                 <div className={styles.tasksList}>
                   {filteredTasks.map((task) => {
-                    const status = task.is_completed ? 'completed' : 'pending';
+                    const status = getTaskStatus(task);
                     const assignee = getTaskAssignee(task);
                     return (
                     <div key={task.id} className={styles.taskCard}>
                       <div className={styles.taskHeader}>
                         <h3 className={styles.taskTitle}>{task.title}</h3>
-                          <span className={`${styles.statusBadge} ${styles[status]}`}>
-                            {status}
-                        </span>
+                        <TaskStatusControl
+                          task={task}
+                          onStatusChange={handleTaskStatusChange}
+                          disabled={isUpdatingTaskStatus}
+                        />
                       </div>
                       
                       {task.description && (
@@ -912,9 +1041,9 @@ function GroupView() {
                         )}
                       </div>
 
-                        {task.is_completed && (task.completer_username || task.completer?.username) && (
+                        {status === 'done' && (task.completer_username || task.completer?.username) && (
                         <div className={styles.completedInfo}>
-                            ✓ Completed by {task.completer_username || task.completer?.username}
+                            Done by {task.completer_username || task.completer?.username}
                         </div>
                       )}
 
@@ -964,6 +1093,17 @@ function GroupView() {
           onTaskUpdated={handleTaskUpdated}
         />
 
+        <LeaveGroupModal
+          isOpen={isLeaveGroupModalOpen}
+          onClose={closeLeaveGroupModal}
+          onConfirm={handleLeaveGroup}
+          isOwner={Number(currentUser?.id) === Number(group?.owner_id)}
+          members={members}
+          currentUserId={currentUser?.id}
+          isSubmitting={isLeavingGroup}
+          error={leaveGroupError}
+        />
+
         <ConfirmModal
           isOpen={confirmModal.isOpen}
           title="Remove Member"
@@ -984,8 +1124,9 @@ function GroupView() {
           groupId={parseInt(groupId)}
           isOpen={isChatOpen}
           onClose={() => setIsChatOpen(false)}
-          isOwner={currentUser?.id === group?.owner_id}
           members={members}
+          zIndex={textChatZ}
+          onFocus={focusTextChatWindow}
         />
 
         {voiceChat.isInVoice && (
@@ -999,7 +1140,7 @@ function GroupView() {
           participantCount={voiceChat.participants.length || 1}
           onToggleMic={voiceChat.toggleMic}
           onToggleCamera={voiceChat.toggleCamera}
-          onExpand={() => setIsVoiceChatOpen(true)}
+          onExpand={openVoiceChatPanel}
           onLeave={handleLeaveVoiceChat}
         />
 
@@ -1020,6 +1161,8 @@ function GroupView() {
           cameraEnabled={voiceChat.cameraEnabled}
           onToggleMic={voiceChat.toggleMic}
           onToggleCamera={voiceChat.toggleCamera}
+          zIndex={voiceChatZ}
+          onFocus={focusVoiceChatWindow}
         />
 
         {isEditModalOpen && (

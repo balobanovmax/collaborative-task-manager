@@ -52,7 +52,7 @@ function TaskManagementModal({ isOpen, onClose, groupId, tasks, members, onTaskU
               onClick={() => setSelectedOperation('toggle')}
               disabled={tasks.length === 0}
             >
-              Toggle Complete
+              Update Status
             </button>
           </div>
           <button className={styles.cancelButton} onClick={handleClose}>

@@ -1,11 +1,14 @@
 import pool from '../config/database.js';
 
+const TASK_STATUSES = ['todo', 'doing', 'done'];
+
 const TASK_SELECT_FIELDS = `
     t.id,
     t.group_id,
     t.title,
     t.description,
     t.is_completed,
+    t.status,
     t.created_by,
     t.created_at,
     t.due_date,
@@ -27,6 +30,7 @@ const formatTaskFromRow = (task, extra = {}) => ({
     title: task.title,
     description: task.description,
     is_completed: task.is_completed,
+    status: task.status || (task.is_completed ? 'done' : 'todo'),
     created_by: task.created_by,
     created_at: task.created_at,
     due_date: task.due_date,
@@ -267,6 +271,7 @@ export const getTasksByGroup = async (groupId, options = {}) => {
         const {
             completedOnly = false,
             pendingOnly = false,
+            status = null,
             assignedTo = null,
             unassignedOnly = false,
             sortBy = 'created_at',
@@ -274,7 +279,7 @@ export const getTasksByGroup = async (groupId, options = {}) => {
         } = options;
         
         // Validate sort options
-        const validSortFields = ['created_at', 'due_date', 'title', 'is_completed'];
+        const validSortFields = ['created_at', 'due_date', 'title', 'is_completed', 'status'];
         const validSortOrders = ['ASC', 'DESC'];
         
         if (!validSortFields.includes(sortBy)) {
@@ -285,17 +290,18 @@ export const getTasksByGroup = async (groupId, options = {}) => {
             throw new Error('Invalid sort order. Must be ASC or DESC.');
         }
         
-        // Build WHERE clause based on completion filter
+        // Build WHERE clause based on filters
         let whereClause = 'WHERE t.group_id = $1';
-        if (completedOnly && !pendingOnly) {
-            whereClause += ' AND t.is_completed = true';
-        } else if (pendingOnly && !completedOnly) {
-            whereClause += ' AND t.is_completed = false';
-        } else if (pendingOnly && !completedOnly) {
-            whereClause += ' AND t.is_completed = false';
-        }
-
         const queryValues = [groupId];
+
+        if (status && TASK_STATUSES.includes(status)) {
+            whereClause += ` AND t.status = $${queryValues.length + 1}`;
+            queryValues.push(status);
+        } else if (completedOnly && !pendingOnly) {
+            whereClause += " AND t.status = 'done'";
+        } else if (pendingOnly && !completedOnly) {
+            whereClause += " AND t.status != 'done'";
+        }
         if (unassignedOnly) {
             whereClause += ' AND t.assigned_to IS NULL';
         } else if (assignedTo !== null && assignedTo !== undefined) {
@@ -329,9 +335,11 @@ export const getTasksByGroup = async (groupId, options = {}) => {
         
         // Calculate task statistics
         const totalTasks = tasks.length;
-        const completedTasks = tasks.filter(task => task.is_completed).length;
-        const pendingTasks = totalTasks - completedTasks;
+        const todoTasks = tasks.filter((task) => (task.status || 'todo') === 'todo').length;
+        const doingTasks = tasks.filter((task) => task.status === 'doing').length;
+        const doneTasks = tasks.filter((task) => (task.status || (task.is_completed ? 'done' : 'todo')) === 'done').length;
         const overdueTasks = tasks.filter(task => 
+            task.status !== 'done' &&
             !task.is_completed && 
             task.due_date && 
             new Date(task.due_date) < new Date()
@@ -342,8 +350,11 @@ export const getTasksByGroup = async (groupId, options = {}) => {
             group_name: groupInfo.name,
             summary: {
                 total_tasks: totalTasks,
-                completed_tasks: completedTasks,
-                pending_tasks: pendingTasks,
+                todo_tasks: todoTasks,
+                doing_tasks: doingTasks,
+                done_tasks: doneTasks,
+                completed_tasks: doneTasks,
+                pending_tasks: todoTasks + doingTasks,
                 overdue_tasks: overdueTasks
             },
             tasks: tasks
@@ -627,19 +638,20 @@ export const deleteTask = async (taskId, userId) => {
     }
 };
 
-export const toggleTaskCompletion = async (taskId, userId) => {
+export const updateTaskStatus = async (taskId, userId, nextStatus) => {
     try {
-        // Validate task ID
         if (!taskId || isNaN(taskId) || taskId <= 0) {
             throw new Error('Invalid task ID. Must be a positive number.');
         }
-        
-        // Validate user ID
+
         if (!userId || isNaN(userId) || userId <= 0) {
             throw new Error('Invalid user ID. Must be a positive number.');
         }
-        
-        // Get the task with group info
+
+        if (!TASK_STATUSES.includes(nextStatus)) {
+            throw new Error('Invalid task status. Must be one of: todo, doing, done.');
+        }
+
         const taskQuery = `
             SELECT 
                 t.*,
@@ -649,66 +661,73 @@ export const toggleTaskCompletion = async (taskId, userId) => {
             WHERE t.id = $1
         `;
         const taskResult = await pool.query(taskQuery, [taskId]);
-        
+
         if (taskResult.rows.length === 0) {
             throw new Error(`Task with ID ${taskId} not found.`);
         }
-        
+
         const task = taskResult.rows[0];
-        
-        // Check if user is a member of the group (any member can toggle completion)
+
         const membershipQuery = `
             SELECT user_id FROM group_members 
             WHERE group_id = $1 AND user_id = $2
         `;
         const membershipResult = await pool.query(membershipQuery, [task.group_id, userId]);
-        
+
         if (membershipResult.rows.length === 0) {
-            throw new Error('You must be a member of the group to toggle task completion.');
+            throw new Error('You must be a member of the group to update task status.');
         }
-        
-        // Determine new completion status
-        const newCompletionStatus = !task.is_completed;
+
         const currentTime = new Date();
-        
-        // Prepare update values based on completion status
-        let updateQuery;
-        let queryValues;
-        
-        if (newCompletionStatus) {
-            // Marking as completed
-            updateQuery = `
-                UPDATE tasks 
-                SET is_completed = true, completed_at = $1, completed_by = $2
-                WHERE id = $3
-                RETURNING id, group_id, title, description, is_completed, created_by, created_at, due_date, completed_at, completed_by
-            `;
-            queryValues = [currentTime, userId, taskId];
-        } else {
-            // Marking as incomplete
-            updateQuery = `
-                UPDATE tasks 
-                SET is_completed = false, completed_at = NULL, completed_by = NULL
-                WHERE id = $1
-                RETURNING id, group_id, title, description, is_completed, created_by, created_at, due_date, completed_at, completed_by
-            `;
-            queryValues = [taskId];
-        }
-        
-        // Execute the update
-        const updateResult = await pool.query(updateQuery, queryValues);
-        const updatedTask = updateResult.rows[0];
-        
-        // Get the full task details with user information
+        const isDone = nextStatus === 'done';
+
+        const updateQuery = `
+            UPDATE tasks
+            SET
+                status = $1,
+                is_completed = $2,
+                completed_at = $3,
+                completed_by = $4
+            WHERE id = $5
+            RETURNING id
+        `;
+
+        await pool.query(updateQuery, [
+            nextStatus,
+            isDone,
+            isDone ? currentTime : null,
+            isDone ? userId : null,
+            taskId
+        ]);
+
         const fullTaskResult = await findTaskById(taskId);
-        
+
         return {
             success: true,
-            message: newCompletionStatus ? 'Task marked as completed' : 'Task marked as incomplete',
-            action: newCompletionStatus ? 'completed' : 'reopened',
+            message: `Task moved to ${nextStatus.replace('_', ' ')}`,
+            action: 'status_updated',
+            previous_status: task.status || (task.is_completed ? 'done' : 'todo'),
             task: fullTaskResult
         };
-        
+
+    } catch (error) {
+        console.error('Error updating task status:', error);
+        throw error;
+    }
+};
+
+export const toggleTaskCompletion = async (taskId, userId) => {
+    try {
+        const task = await findTaskById(taskId);
+        if (!task) {
+            throw new Error(`Task with ID ${taskId} not found.`);
+        }
+
+        const currentStatus = task.status || (task.is_completed ? 'done' : 'todo');
+        const currentIndex = TASK_STATUSES.indexOf(currentStatus);
+        const nextStatus = TASK_STATUSES[(currentIndex + 1) % TASK_STATUSES.length];
+
+        return updateTaskStatus(taskId, userId, nextStatus);
     } catch (error) {
         console.error('Error toggling task completion:', error);
         throw error;

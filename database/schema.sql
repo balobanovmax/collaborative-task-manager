@@ -31,6 +31,7 @@ CREATE TABLE tasks (
     title VARCHAR(255) NOT NULL,
     description TEXT,
     is_completed BOOLEAN DEFAULT FALSE,
+    status VARCHAR(20) NOT NULL DEFAULT 'todo' CHECK (status IN ('todo', 'doing', 'done')),
     created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     due_date TIMESTAMP,
@@ -40,12 +41,16 @@ CREATE TABLE tasks (
 );
 
 CREATE INDEX idx_tasks_assigned_to ON tasks(assigned_to);
+CREATE INDEX idx_tasks_status ON tasks(status);
 
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
     group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
     user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    content TEXT NOT NULL,
+    content TEXT,
+    message_type VARCHAR(20) NOT NULL DEFAULT 'text' CHECK (message_type IN ('text', 'voice')),
+    voice_url VARCHAR(500),
+    voice_duration_seconds INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

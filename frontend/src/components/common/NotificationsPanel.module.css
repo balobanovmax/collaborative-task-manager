@@ -2,19 +2,21 @@
   position: relative;
 }
 
-.bellButton {
+.notificationsButton {
   position: relative;
-  padding: 8px 12px;
+  padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
   background-color: var(--bg-muted);
   color: var(--text-primary);
   border: 1px solid var(--border);
   transition: background-color 0.2s, border-color 0.2s;
 }
 
-.bellButton:hover {
+.notificationsButton:hover {
   background-color: var(--bg-hover);
   border-color: var(--primary);
 }

@@ -505,6 +505,45 @@
   background-color: var(--primary-hover);
 }
 
+.tasksHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.viewToggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.viewToggleButton {
+  border: none;
+  background: var(--bg-page);
+  color: var(--text-subtle);
+  padding: 9px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.viewToggleButton + .viewToggleButton {
+  border-left: 1px solid var(--border);
+}
+
+.viewToggleButtonActive {
+  background: var(--primary);
+  color: var(--text-inverse);
+}
+
+.viewToggleButton:hover:not(.viewToggleButtonActive) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
 .emptyState {
   text-align: center;
   padding: 60px 20px;
@@ -553,17 +592,20 @@
   text-transform: capitalize;
 }
 
-.statusBadge.pending {
+.statusBadge.pending,
+.statusBadge.todo {
   background-color: var(--warning-bg);
   color: var(--warning-text);
 }
 
-.statusBadge.in_progress {
+.statusBadge.in_progress,
+.statusBadge.doing {
   background-color: var(--status-progress-bg);
   color: var(--status-progress-text);
 }
 
-.statusBadge.completed {
+.statusBadge.completed,
+.statusBadge.done {
   background-color: var(--success-dark-bg);
   color: var(--success-dark-text);
 }
@@ -637,6 +679,26 @@
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.2s;
+}
+
+.leaveGroupButton {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px 16px;
+  border-radius: 4px;
+  border: 1px solid var(--danger);
+  background: transparent;
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.leaveGroupButton:hover {
+  background: var(--danger);
+  color: var(--text-inverse);
 }
 
 .chatButtons {
