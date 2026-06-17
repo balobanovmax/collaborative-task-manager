@@ -5,17 +5,17 @@
 .formTitle {
   font-size: 24px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   margin: 0 0 20px 0;
   text-align: center;
 }
 
 .errorMessage {
-  background-color: #FFEBEE;
-  color: #C0392B;
+  background-color: var(--danger-bg);
+  color: var(--danger-hover);
   padding: 12px;
   border-radius: 4px;
-  border-left: 4px solid #E74C3C;
+  border-left: 4px solid var(--danger);
   font-size: 14px;
   text-align: center;
   margin-bottom: 20px;
@@ -29,7 +29,7 @@
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #333333;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -37,25 +37,25 @@
   width: 100%;
   padding: 12px;
   font-size: 14px;
-  border: 1px solid #E0E0E0;
+  border: 1px solid var(--border);
   border-radius: 4px;
   box-sizing: border-box;
 }
 
 .formInput:focus {
   outline: none;
-  border-color: #4A90E2;
+  border-color: var(--primary);
 }
 
 .formInput::placeholder {
-  color: #999999;
+  color: var(--text-placeholder);
 }
 
 .formTextarea {
   width: 100%;
   padding: 12px;
   font-size: 14px;
-  border: 1px solid #E0E0E0;
+  border: 1px solid var(--border);
   border-radius: 4px;
   box-sizing: border-box;
   resize: vertical;
@@ -64,11 +64,11 @@
 
 .formTextarea:focus {
   outline: none;
-  border-color: #4A90E2;
+  border-color: var(--primary);
 }
 
 .formTextarea::placeholder {
-  color: #999999;
+  color: var(--text-placeholder);
 }
 
 .buttonGroup {
@@ -82,8 +82,8 @@
 }
 
 .btnPrimary {
-  background-color: #4A90E2;
-  color: white;
+  background-color: var(--primary);
+  color: var(--text-inverse);
   padding: 12px 24px;
   border: none;
   border-radius: 4px;
@@ -94,7 +94,7 @@
 }
 
 .btnPrimary:hover:not(:disabled) {
-  background-color: #357ABD;
+  background-color: var(--primary-hover);
 }
 
 .btnPrimary:disabled {
@@ -103,9 +103,9 @@
 }
 
 .btnSecondary {
-  background-color: white;
-  color: #6C757D;
-  border: 1px solid #6C757D;
+  background-color: var(--bg-surface);
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
   padding: 12px 24px;
   border-radius: 4px;
   cursor: pointer;
@@ -115,7 +115,7 @@
 }
 
 .btnSecondary:hover:not(:disabled) {
-  background-color: #F5F5F5;
+  background-color: var(--bg-page);
 }
 
 .btnSecondary:disabled {

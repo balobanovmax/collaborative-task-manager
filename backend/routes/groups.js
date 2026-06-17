@@ -118,9 +118,14 @@ router.put('/:id', requireAuth, async (req, res) => {
             });
         }
         
-        const { name, description } = req.body;
+        const { name, description, is_public, join_password } = req.body;
         
-        const updatedGroup = await updateGroup(groupId, userId, { name, description });
+        const updatedGroup = await updateGroup(groupId, userId, {
+            name,
+            description,
+            is_public,
+            join_password
+        });
         
         emitGroupUpdated(groupId);
         

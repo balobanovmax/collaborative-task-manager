@@ -82,8 +82,14 @@ export const groupAPI = {
     return response.data;
   },
 
-  updateGroup: async (groupId, name, description) => {
-    const response = await api.put(`/groups/${groupId}`, { name, description });
+  updateGroup: async (groupId, { name, description, is_public, join_password } = {}) => {
+    const payload = { name, description, is_public };
+
+    if (join_password) {
+      payload.join_password = join_password;
+    }
+
+    const response = await api.put(`/groups/${groupId}`, payload);
     return response.data;
   }
 };

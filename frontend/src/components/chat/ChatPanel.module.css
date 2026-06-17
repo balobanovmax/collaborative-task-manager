@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--overlay-light);
   z-index: 999;
 }
 
@@ -14,12 +14,12 @@
   top: 0;
   width: 360px;
   height: 100vh;
-  background: #ffffff;
-  border-left: 1px solid #ddd;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-light);
   display: flex;
   flex-direction: column;
   z-index: 1000;
-  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: -2px 0 8px var(--shadow-sm);
 }
 
 .chatHeader {
@@ -27,14 +27,14 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #ddd;
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .chatTitle {
   margin: 0;
   font-size: 16px;
-  color: #333;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -45,9 +45,9 @@
 }
 
 .clearChatButton {
-  background: #dc3545;
+  background: var(--danger-alt);
   border: none;
-  color: white;
+  color: var(--text-inverse);
   font-size: 12px;
   cursor: pointer;
   padding: 4px 10px;
@@ -55,18 +55,18 @@
 }
 
 .clearChatButton:hover:not(:disabled) {
-  background: #c82333;
+  background: var(--danger-alt-hover);
 }
 
 .clearChatButton:disabled {
-  background: #ccc;
+  background: var(--bg-disabled);
   cursor: not-allowed;
 }
 
 .closeButton {
   background: none;
   border: none;
-  color: #666;
+  color: var(--text-subtle);
   font-size: 20px;
   cursor: pointer;
   padding: 0;
@@ -74,7 +74,7 @@
 }
 
 .closeButton:hover {
-  color: #333;
+  color: var(--text-primary);
 }
 
 .messagesContainer {
@@ -84,7 +84,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #fafafa;
+  background: var(--bg-surface-alt);
 }
 
 .loadingState,
@@ -93,7 +93,7 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #888;
+  color: var(--text-faint);
   font-size: 14px;
 }
 
@@ -105,8 +105,8 @@
 }
 
 .dateDivider span {
-  background: #e0e0e0;
-  color: #666;
+  background: var(--border);
+  color: var(--text-subtle);
   font-size: 11px;
   padding: 4px 10px;
   border-radius: 2px;
@@ -126,19 +126,19 @@
 .messageBubble {
   max-width: 80%;
   padding: 8px 12px;
-  background: #e8e8e8;
-  color: #333;
+  background: var(--chat-bubble);
+  color: var(--text-primary);
   border-radius: 2px;
 }
 
 .ownMessage .messageBubble {
-  background: #4A90E2;
-  color: white;
+  background: var(--primary);
+  color: var(--text-inverse);
 }
 
 .messageAuthor {
   font-size: 11px;
-  color: #666;
+  color: var(--text-subtle);
   margin-bottom: 2px;
   font-weight: 600;
 }
@@ -152,60 +152,60 @@
 
 .messageTime {
   font-size: 10px;
-  color: #999;
+  color: var(--text-placeholder);
   margin-top: 4px;
   text-align: right;
 }
 
 .ownMessage .messageTime {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--chat-time-own);
 }
 
 .errorMessage {
-  background: #ffebee;
-  color: #c0392b;
+  background: var(--danger-bg);
+  color: var(--danger-hover);
   padding: 8px 16px;
   font-size: 13px;
   text-align: center;
-  border-top: 1px solid #ffcdd2;
+  border-top: 1px solid var(--danger-border);
 }
 
 .inputContainer {
   display: flex;
   gap: 8px;
   padding: 12px 16px;
-  background: #f5f5f5;
-  border-top: 1px solid #ddd;
+  background: var(--bg-page);
+  border-top: 1px solid var(--border-light);
 }
 
 .messageInput {
   flex: 1;
   padding: 10px 12px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   border-radius: 2px;
-  background: white;
-  color: #333;
+  background: var(--bg-surface);
+  color: var(--text-primary);
   font-size: 14px;
   outline: none;
 }
 
 .messageInput::placeholder {
-  color: #999;
+  color: var(--text-placeholder);
 }
 
 .messageInput:focus {
-  border-color: #4A90E2;
+  border-color: var(--primary);
 }
 
 .messageInput:disabled {
   opacity: 0.6;
-  background: #f0f0f0;
+  background: var(--bg-input-disabled);
 }
 
 .closeChatButton {
   padding: 10px 16px;
-  background: #6c757d;
-  color: white;
+  background: var(--secondary-text);
+  color: var(--text-inverse);
   border: none;
   border-radius: 2px;
   font-size: 14px;
@@ -214,13 +214,13 @@
 }
 
 .closeChatButton:hover {
-  background: #5a6268;
+  background: var(--secondary-muted-hover);
 }
 
 .sendButton {
   padding: 10px 20px;
-  background: #4A90E2;
-  color: white;
+  background: var(--primary);
+  color: var(--text-inverse);
   border: none;
   border-radius: 2px;
   font-size: 14px;
@@ -229,11 +229,11 @@
 }
 
 .sendButton:hover:not(:disabled) {
-  background: #357ABD;
+  background: var(--primary-hover);
 }
 
 .sendButton:disabled {
-  background: #ccc;
+  background: var(--bg-disabled);
   cursor: not-allowed;
 }
 

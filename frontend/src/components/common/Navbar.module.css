@@ -3,10 +3,11 @@
   top: 0;
   left: 0;
   right: 0;
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #E0E0E0;
+  background-color: var(--navbar-bg);
+  border-bottom: 1px solid var(--border);
   padding: 15px 0;
   z-index: 1000;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .navContent {
@@ -18,20 +19,55 @@
   align-items: center;
 }
 
+.navLeft {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+
 .logo {
   font-size: 20px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   text-decoration: none;
 }
 
 .logo:hover {
-  color: #4A90E2;
+  color: var(--primary);
+}
+
+.userGreeting {
+  font-size: 14px;
+  color: var(--text-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .buttonGroup {
   display: flex;
   gap: 10px;
+  align-items: center;
+}
+
+.themeToggle {
+  padding: 8px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: var(--bg-muted);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.themeToggle:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .btnPrimary,
@@ -48,23 +84,23 @@
 }
 
 .btnPrimary {
-  background-color: #4A90E2;
-  color: white;
+  background-color: var(--primary);
+  color: var(--text-inverse);
   border: none;
 }
 
 .btnPrimary:hover {
-  background-color: #357ABD;
+  background-color: var(--primary-hover);
 }
 
 .btnSecondary {
-  background-color: white;
-  color: #6C757D;
-  border: 1px solid #6C757D;
+  background-color: var(--bg-surface);
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
 }
 
 .btnSecondary:hover {
-  background-color: #F5F5F5;
+  background-color: var(--bg-page);
 }
 
 

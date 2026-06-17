@@ -5,24 +5,24 @@
 .formTitle {
   font-size: 24px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
   text-align: center;
 }
 
 .formSubtitle {
   font-size: 14px;
-  color: #7f8c8d;
+  color: var(--text-muted);
   margin: 0 0 20px 0;
   text-align: center;
 }
 
 .errorMessage {
-  background-color: #FFEBEE;
-  color: #C0392B;
+  background-color: var(--danger-bg);
+  color: var(--danger-hover);
   padding: 12px;
   border-radius: 4px;
-  border-left: 4px solid #E74C3C;
+  border-left: 4px solid var(--danger);
   font-size: 14px;
   text-align: center;
   margin-bottom: 20px;
@@ -39,15 +39,15 @@
 
 .taskItem {
   padding: 16px;
-  background-color: #F5F5F5;
+  background-color: var(--bg-page);
   border-radius: 6px;
-  border-left: 4px solid #4A90E2;
+  border-left: 4px solid var(--primary);
   cursor: pointer;
   transition: background-color 0.2s, transform 0.2s;
 }
 
 .taskItem:hover {
-  background-color: #E8F4FD;
+  background-color: var(--bg-highlight);
   transform: translateX(2px);
 }
 
@@ -61,7 +61,7 @@
 .taskItemTitle {
   font-size: 16px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   margin: 0;
   flex: 1;
 }
@@ -76,25 +76,25 @@
 }
 
 .statusBadge.pending {
-  background-color: #FFF3CD;
-  color: #856404;
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .statusBadge.completed {
-  background-color: #D4EDDA;
-  color: #155724;
+  background-color: var(--success-dark-bg);
+  color: var(--success-dark-text);
 }
 
 .taskItemDescription {
   font-size: 14px;
-  color: #555555;
+  color: var(--text-secondary);
   margin: 0 0 8px 0;
   line-height: 1.5;
 }
 
 .taskItemMeta {
   font-size: 12px;
-  color: #7f8c8d;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -109,9 +109,9 @@
 }
 
 .btnSecondary {
-  background-color: white;
-  color: #6C757D;
-  border: 1px solid #6C757D;
+  background-color: var(--bg-surface);
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
   padding: 12px 24px;
   border-radius: 4px;
   cursor: pointer;
@@ -121,7 +121,7 @@
 }
 
 .btnSecondary:hover:not(:disabled) {
-  background-color: #F5F5F5;
+  background-color: var(--bg-page);
 }
 
 .btnSecondary:disabled {

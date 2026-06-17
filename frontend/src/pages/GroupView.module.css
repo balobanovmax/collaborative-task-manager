@@ -1,15 +1,15 @@
 .container {
   min-height: calc(100vh - 70px);
   padding: 40px 20px;
-  background-color: #F5F5F5;
+  background-color: var(--bg-page);
   margin-top: 70px;
   box-sizing: border-box;
 }
 
 .backButton {
-  background-color: white;
-  color: #6C757D;
-  border: 1px solid #6C757D;
+  background-color: var(--bg-surface);
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
@@ -21,7 +21,7 @@
 }
 
 .backButton:hover {
-  background-color: #f8f9fa;
+  background-color: var(--bg-hover);
 }
 
 .loading,
@@ -29,12 +29,12 @@
   text-align: center;
   padding: 40px;
   font-size: 16px;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .error {
-  color: #E74C3C;
-  background-color: #FFEBEE;
+  color: var(--danger);
+  background-color: var(--danger-bg);
   border-radius: 8px;
   max-width: 600px;
   margin: 0 auto;
@@ -52,25 +52,25 @@
 .accessDeniedMessage {
   font-size: 18px;
   font-weight: 500;
-  color: #E74C3C;
-  background-color: #FFEBEE;
+  color: var(--danger);
+  background-color: var(--danger-bg);
   padding: 20px 40px;
   border-radius: 6px;
-  border-left: 4px solid #E74C3C;
+  border-left: 4px solid var(--danger);
 }
 
 .redirectingText {
   margin-top: 16px;
   font-size: 14px;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .header {
   max-width: 1200px;
   margin: 0 auto 30px;
   padding: 20px 24px;
-  background-color: #fff;
-  border: 1px solid #e0e0e0;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 6px;
   display: flex;
   justify-content: space-between;
@@ -95,7 +95,7 @@
 .groupName {
   font-size: 28px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -103,23 +103,23 @@
   padding: 5px 12px;
   font-size: 13px;
   font-weight: 500;
-  color: #666;
+  color: var(--text-subtle);
   background-color: transparent;
-  border: 1px solid #ccc;
+  border: 1px solid var(--bg-disabled);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .editButton:hover {
-  background-color: #f5f5f5;
-  border-color: #999;
-  color: #333;
+  background-color: var(--bg-page);
+  border-color: var(--text-placeholder);
+  color: var(--text-primary);
 }
 
 .groupDescription {
   font-size: 15px;
-  color: #7f8c8d;
+  color: var(--text-muted);
   margin: 0;
 }
 
@@ -127,17 +127,17 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  background-color: #fafafa;
+  background-color: var(--bg-surface-alt);
   padding: 12px 20px;
   border-radius: 6px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   min-width: 100px;
 }
 
 .groupIdLabel {
   font-size: 11px;
   font-weight: 500;
-  color: #999;
+  color: var(--text-placeholder);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -146,7 +146,7 @@
 .groupIdValue {
   font-size: 22px;
   font-weight: 600;
-  color: #4A90E2;
+  color: var(--primary);
   font-family: 'Courier New', monospace;
 }
 
@@ -171,15 +171,15 @@
 .sectionTitle {
   font-size: 20px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   margin: 0 0 15px 0;
 }
 
 .membersSection {
-  background-color: white;
+  background-color: var(--bg-surface);
   padding: 20px;
   border-radius: 8px;
-  border: 1px solid #E0E0E0;
+  border: 1px solid var(--border);
 }
 
 .membersSectionHeader {
@@ -193,17 +193,17 @@
   cursor: pointer;
   font-size: 18px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   text-align: left;
 }
 
 .membersSectionHeader:hover {
-  color: #4A90E2;
+  color: var(--primary);
 }
 
 .expandArrow {
   font-size: 12px;
-  color: #666;
+  color: var(--text-subtle);
   transition: transform 0.2s;
 }
 
@@ -220,13 +220,13 @@
 
 .memberCard {
   padding: 12px;
-  background-color: #F5F5F5;
+  background-color: var(--bg-page);
   border-radius: 6px;
   transition: background-color 0.2s;
 }
 
 .memberCard:hover {
-  background-color: #ECECEC;
+  background-color: var(--bg-hover-strong);
 }
 
 .memberInfo {
@@ -245,12 +245,12 @@
 .memberName {
   font-size: 14px;
   font-weight: 500;
-  color: #333333;
+  color: var(--text-primary);
 }
 
 .removeMemberButton {
-  background-color: #4A90E2;
-  color: white;
+  background-color: var(--primary);
+  color: var(--text-inverse);
   border: none;
   padding: 4px 10px;
   border-radius: 4px;
@@ -261,14 +261,14 @@
 }
 
 .removeMemberButton:hover {
-  background-color: #357ABD;
+  background-color: var(--primary-hover);
 }
 
 .youBadge {
   font-size: 11px;
   font-weight: 500;
-  color: #27AE60;
-  background-color: #E8F5E9;
+  color: var(--success-accent);
+  background-color: var(--success-bg);
   padding: 3px 8px;
   border-radius: 10px;
 }
@@ -276,17 +276,17 @@
 .ownerBadge {
   font-size: 11px;
   font-weight: 500;
-  color: #4A90E2;
-  background-color: #E3F2FD;
+  color: var(--primary);
+  background-color: var(--badge-owner-bg);
   padding: 3px 8px;
   border-radius: 10px;
 }
 
 .tasksSection {
-  background-color: white;
+  background-color: var(--bg-surface);
   padding: 20px;
   border-radius: 8px;
-  border: 1px solid #E0E0E0;
+  border: 1px solid var(--border);
 }
 
 .tasksSectionHeader {
@@ -297,8 +297,8 @@
 }
 
 .manageTasksButton {
-  background-color: #4A90E2;
-  color: white;
+  background-color: var(--primary);
+  color: var(--text-inverse);
   border: none;
   padding: 10px 20px;
   border-radius: 4px;
@@ -309,13 +309,13 @@
 }
 
 .manageTasksButton:hover {
-  background-color: #357ABD;
+  background-color: var(--primary-hover);
 }
 
 .emptyState {
   text-align: center;
   padding: 60px 20px;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .tasksList {
@@ -326,15 +326,15 @@
 
 .taskCard {
   padding: 16px;
-  background-color: #F5F5F5;
+  background-color: var(--bg-page);
   border-radius: 6px;
-  border-left: 4px solid #4A90E2;
+  border-left: 4px solid var(--primary);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .taskCard:hover {
   transform: translateX(2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px var(--shadow-sm);
 }
 
 .taskHeader {
@@ -347,7 +347,7 @@
 .taskTitle {
   font-size: 16px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   margin: 0;
   flex: 1;
 }
@@ -361,23 +361,23 @@
 }
 
 .statusBadge.pending {
-  background-color: #FFF3CD;
-  color: #856404;
+  background-color: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .statusBadge.in_progress {
-  background-color: #CCE5FF;
-  color: #004085;
+  background-color: var(--status-progress-bg);
+  color: var(--status-progress-text);
 }
 
 .statusBadge.completed {
-  background-color: #D4EDDA;
-  color: #155724;
+  background-color: var(--success-dark-bg);
+  color: var(--success-dark-text);
 }
 
 .taskDescription {
   font-size: 14px;
-  color: #555555;
+  color: var(--text-secondary);
   margin: 0 0 10px 0;
   line-height: 1.5;
 }
@@ -390,13 +390,13 @@
 
 .taskInfo {
   font-size: 12px;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .completedInfo {
   margin-top: 10px;
   font-size: 12px;
-  color: #27AE60;
+  color: var(--success-accent);
   font-weight: 500;
 }
 
@@ -405,14 +405,14 @@
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #E8F5E9;
-  color: #2E7D32;
+  background-color: var(--success-bg);
+  color: var(--success-text);
   padding: 16px 32px;
   border-radius: 6px;
-  border-left: 4px solid #5CB85C;
+  border-left: 4px solid var(--success);
   font-size: 14px;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--shadow);
   z-index: 999;
 }
 
@@ -421,22 +421,22 @@
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #FFEBEE;
-  color: #C0392B;
+  background-color: var(--danger-bg);
+  color: var(--danger-hover);
   padding: 16px 32px;
   border-radius: 6px;
-  border-left: 4px solid #E74C3C;
+  border-left: 4px solid var(--danger);
   font-size: 14px;
   font-weight: 500;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 12px var(--shadow);
   z-index: 999;
 }
 
 .chatButton {
   position: relative;
   width: 100%;
-  background-color: #4A90E2;
-  color: white;
+  background-color: var(--primary);
+  color: var(--text-inverse);
   border: none;
   padding: 12px 24px;
   border-radius: 4px;
@@ -454,27 +454,27 @@
   min-width: 20px;
   height: 20px;
   padding: 0 6px;
-  background-color: #E74C3C;
-  color: white;
+  background-color: var(--danger);
+  color: var(--text-inverse);
   border-radius: 10px;
   font-size: 11px;
   font-weight: 700;
   line-height: 20px;
   text-align: center;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px var(--shadow-md);
   pointer-events: none;
 }
 
 .chatButton:hover {
-  background-color: #357ABD;
+  background-color: var(--primary-hover);
 }
 
 .chatButtonNotification {
-  background-color: #E74C3C;
+  background-color: var(--danger);
 }
 
 .chatButtonNotification:hover {
-  background-color: #C0392B;
+  background-color: var(--danger-hover);
 }
 
 .modalOverlay {
@@ -483,7 +483,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
+  background-color: var(--overlay);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -491,8 +491,8 @@
 }
 
 .editModal {
-  background-color: #fff;
-  border: 1px solid #e0e0e0;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 24px;
   width: 100%;
@@ -503,7 +503,7 @@
 .editModalTitle {
   font-size: 18px;
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin: 0 0 20px 0;
 }
 
@@ -515,7 +515,7 @@
   display: block;
   font-size: 13px;
   font-weight: 500;
-  color: #555;
+  color: var(--text-secondary);
   margin-bottom: 6px;
 }
 
@@ -523,21 +523,21 @@
   width: 100%;
   padding: 10px 12px;
   font-size: 14px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   outline: none;
   box-sizing: border-box;
 }
 
 .formInput:focus {
-  border-color: #4A90E2;
+  border-color: var(--primary);
 }
 
 .formTextarea {
   width: 100%;
   padding: 10px 12px;
   font-size: 14px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   outline: none;
   resize: vertical;
@@ -546,7 +546,47 @@
 }
 
 .formTextarea:focus {
-  border-color: #4A90E2;
+  border-color: var(--primary);
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.radioLabel {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.radioLabel input[type="radio"] {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.radioLabel span {
+  user-select: none;
+}
+
+.helperText {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  margin-bottom: 0;
+}
+
+.editError {
+  background-color: var(--danger-bg);
+  color: var(--danger-hover);
+  padding: 10px 12px;
+  border-radius: 4px;
+  border-left: 4px solid var(--danger);
+  font-size: 13px;
+  margin-bottom: 4px;
 }
 
 .editModalActions {
@@ -560,30 +600,30 @@
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 500;
-  color: #666;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
+  color: var(--text-subtle);
+  background-color: var(--bg-page);
+  border: 1px solid var(--border-light);
   border-radius: 4px;
   cursor: pointer;
 }
 
 .cancelButton:hover:not(:disabled) {
-  background-color: #eee;
+  background-color: var(--bg-hover-alt);
 }
 
 .saveButton {
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 500;
-  color: #fff;
-  background-color: #4A90E2;
+  color: var(--text-inverse);
+  background-color: var(--primary);
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .saveButton:hover:not(:disabled) {
-  background-color: #357ABD;
+  background-color: var(--primary-hover);
 }
 
 .saveButton:disabled,

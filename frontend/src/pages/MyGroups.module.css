@@ -1,15 +1,15 @@
 .container {
   min-height: calc(100vh - 70px);
   padding: 40px 20px;
-  background-color: #F5F5F5;
+  background-color: var(--bg-page);
   margin-top: 70px;
   box-sizing: border-box;
 }
 
 .backButton {
-  background-color: white;
-  color: #6C757D;
-  border: 1px solid #6C757D;
+  background-color: var(--bg-surface);
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
@@ -21,7 +21,7 @@
 }
 
 .backButton:hover {
-  background-color: #f8f9fa;
+  background-color: var(--bg-hover);
 }
 
 
@@ -29,7 +29,7 @@
 .pageTitle {
   font-size: 32px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   margin: 0 auto 30px;
   max-width: 1200px;
   text-align: left;
@@ -39,17 +39,17 @@
   text-align: center;
   padding: 40px;
   font-size: 16px;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .errorMessage {
   max-width: 1200px;
   margin: 0 auto 20px;
-  background-color: #FFEBEE;
-  color: #C0392B;
+  background-color: var(--danger-bg);
+  color: var(--danger-hover);
   padding: 12px;
   border-radius: 4px;
-  border-left: 4px solid #E74C3C;
+  border-left: 4px solid var(--danger);
   font-size: 14px;
 }
 
@@ -65,7 +65,7 @@
 .sectionTitle {
   font-size: 20px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   margin-bottom: 15px;
 }
 
@@ -77,7 +77,7 @@
 
 .groupCardOwner,
 .groupCardMember {
-  background-color: white;
+  background-color: var(--bg-surface);
   padding: 20px;
   border-radius: 8px;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -86,17 +86,17 @@
 }
 
 .groupCardOwner {
-  border-color: #4A90E2;
+  border-color: var(--primary);
 }
 
 .groupCardMember {
-  border-color: #27AE60;
+  border-color: var(--success-accent);
 }
 
 .groupCardOwner:hover,
 .groupCardMember:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px var(--shadow-sm);
 }
 
 .groupActions {
@@ -107,8 +107,8 @@
 }
 
 .enterButton {
-  background-color: #4A90E2;
-  color: white;
+  background-color: var(--primary);
+  color: var(--text-inverse);
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
@@ -119,12 +119,12 @@
 }
 
 .enterButton:hover {
-  background-color: #357ABD;
+  background-color: var(--primary-hover);
 }
 
 .deleteButton {
-  background-color: #E74C3C;
-  color: white;
+  background-color: var(--danger);
+  color: var(--text-inverse);
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
@@ -135,19 +135,19 @@
 }
 
 .deleteButton:hover {
-  background-color: #C0392B;
+  background-color: var(--danger-hover);
 }
 
 .groupName {
   font-size: 18px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
 }
 
 .groupDescription {
   font-size: 14px;
-  color: #7f8c8d;
+  color: var(--text-muted);
   margin: 0 0 15px 0;
   line-height: 1.4;
 }
@@ -167,24 +167,24 @@
 }
 
 .groupCardOwner .badge {
-  background-color: #E3F2FD;
-  color: #4A90E2;
+  background-color: var(--badge-owner-bg);
+  color: var(--primary);
 }
 
 .groupCardMember .badge {
-  background-color: #E8F5E9;
-  color: #27AE60;
+  background-color: var(--success-bg);
+  color: var(--success-accent);
 }
 
 .memberCount {
   font-size: 13px;
-  color: #7f8c8d;
+  color: var(--text-muted);
 }
 
 .emptyState {
   text-align: center;
   padding: 60px 20px;
-  background-color: white;
+  background-color: var(--bg-surface);
   border-radius: 8px;
   max-width: 500px;
   margin: 0 auto;
@@ -192,13 +192,13 @@
 
 .emptyState p {
   font-size: 16px;
-  color: #7f8c8d;
+  color: var(--text-muted);
   margin-bottom: 20px;
 }
 
 .joinButton {
-  background-color: #4A90E2;
-  color: white;
+  background-color: var(--primary);
+  color: var(--text-inverse);
   padding: 12px 24px;
   border: none;
   border-radius: 4px;
@@ -209,7 +209,7 @@
 }
 
 .joinButton:hover {
-  background-color: #357ABD;
+  background-color: var(--primary-hover);
 }
 
 .notification {
@@ -217,14 +217,14 @@
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #E8F5E9;
-  color: #2E7D32;
+  background-color: var(--success-bg);
+  color: var(--success-text);
   padding: 15px 30px;
   border-radius: 4px;
-  border-left: 4px solid #5CB85C;
+  border-left: 4px solid var(--success);
   font-size: 14px;
   font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px var(--shadow);
   z-index: 1000;
   animation: slideUp 0.3s ease-out;
 }

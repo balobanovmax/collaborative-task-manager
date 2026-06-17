@@ -44,6 +44,9 @@ function GroupView() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [editIsPublic, setEditIsPublic] = useState(true);
+  const [editPassword, setEditPassword] = useState('');
+  const [editError, setEditError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
 
   const fetchGroupData = useCallback(async (showLoading = true) => {
@@ -258,6 +261,9 @@ function GroupView() {
   const openEditModal = () => {
     setEditName(group?.name || '');
     setEditDescription(group?.description || '');
+    setEditIsPublic(group?.is_public ?? true);
+    setEditPassword('');
+    setEditError('');
     setIsEditModalOpen(true);
   };
 
@@ -265,15 +271,37 @@ function GroupView() {
     setIsEditModalOpen(false);
     setEditName('');
     setEditDescription('');
+    setEditIsPublic(true);
+    setEditPassword('');
+    setEditError('');
   };
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editName.trim()) return;
+
+    const wasPublic = group?.is_public ?? true;
+
+    if (!editIsPublic && wasPublic && !editPassword.trim()) {
+      setEditError('Password is required when making a group private');
+      return;
+    }
     
     try {
       setIsEditing(true);
-      await groupAPI.updateGroup(parseInt(groupId), editName.trim(), editDescription.trim());
+      setEditError('');
+
+      const updatePayload = {
+        name: editName.trim(),
+        description: editDescription.trim(),
+        is_public: editIsPublic
+      };
+
+      if (!editIsPublic && editPassword.trim()) {
+        updatePayload.join_password = editPassword.trim();
+      }
+
+      await groupAPI.updateGroup(parseInt(groupId), updatePayload);
       setIsEditModalOpen(false);
       setSuccessMessage('Group updated successfully');
       fetchGroupData(false);
@@ -282,9 +310,9 @@ function GroupView() {
       }, 3000);
     } catch (error) {
       if (error.response && error.response.data && error.response.data.message) {
-        setErrorMessage(error.response.data.message);
+        setEditError(error.response.data.message);
       } else {
-        setErrorMessage('Failed to update group. Please try again.');
+        setEditError('Failed to update group. Please try again.');
       }
     } finally {
       setIsEditing(false);
@@ -547,6 +575,58 @@ function GroupView() {
                     rows={4}
                   />
                 </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Privacy</label>
+                  <div className={styles.radioGroup}>
+                    <label className={styles.radioLabel}>
+                      <input
+                        type="radio"
+                        name="editPrivacy"
+                        checked={editIsPublic}
+                        onChange={() => {
+                          setEditIsPublic(true);
+                          setEditPassword('');
+                          setEditError('');
+                        }}
+                        disabled={isEditing}
+                      />
+                      <span>Public (anyone can join)</span>
+                    </label>
+                    <label className={styles.radioLabel}>
+                      <input
+                        type="radio"
+                        name="editPrivacy"
+                        checked={!editIsPublic}
+                        onChange={() => setEditIsPublic(false)}
+                        disabled={isEditing}
+                      />
+                      <span>Private (requires password)</span>
+                    </label>
+                  </div>
+                </div>
+                {!editIsPublic && (
+                  <div className={styles.formGroup}>
+                    <label className={styles.formLabel}>
+                      {group?.is_public ? 'Password' : 'New Password (optional)'}
+                    </label>
+                    <input
+                      type="password"
+                      className={styles.formInput}
+                      placeholder={group?.is_public ? 'Enter group password' : 'Leave blank to keep current password'}
+                      value={editPassword}
+                      onChange={(e) => setEditPassword(e.target.value)}
+                      disabled={isEditing}
+                    />
+                    <p className={styles.helperText}>
+                      {group?.is_public
+                        ? 'Members will need this password to join'
+                        : 'Enter a new password only if you want to change it'}
+                    </p>
+                  </div>
+                )}
+                {editError && (
+                  <div className={styles.editError}>{editError}</div>
+                )}
                 <div className={styles.editModalActions}>
                   <button
                     type="button"

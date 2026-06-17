@@ -22,45 +22,45 @@
 
 
 .btnPrimary {
-  background-color: #4A90E2;
-  color: white;
+  background-color: var(--primary);
+  color: var(--text-inverse);
   border: none;
 }
 
 .btnPrimary:hover {
-  background-color: #357ABD;
+  background-color: var(--primary-hover);
 }
 
 
 .btnSecondary {
-  background-color: white;
-  color: #6C757D;
-  border: 1px solid #6C757D;
+  background-color: var(--bg-surface);
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
 }
 
 .btnSecondary:hover {
-  background-color: #F5F5F5;
+  background-color: var(--bg-page);
 }
 
 
 .btnDanger {
-  background-color: #E74C3C;
-  color: white;
+  background-color: var(--danger);
+  color: var(--text-inverse);
   border: none;
 }
 
 .btnDanger:hover {
-  background-color: #C0392B;
+  background-color: var(--danger-hover);
 }
 
 
 .btnSuccess {
-  background-color: #5CB85C;
-  color: white;
+  background-color: var(--success);
+  color: var(--text-inverse);
   border: none;
 }
 
 .btnSuccess:hover {
-  background-color: #4CAE4C;
+  background-color: var(--success-hover);
 }
 

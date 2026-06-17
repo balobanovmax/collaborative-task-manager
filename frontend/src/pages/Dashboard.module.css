@@ -1,16 +1,16 @@
 
 .container {
   min-height: calc(100vh - 70px);
-  background-color: #F5F5F5;
+  background-color: var(--bg-page);
   margin-top: 70px;
   padding: 40px 20px;
   box-sizing: border-box;
 }
 
 .backButton {
-  background-color: white;
-  color: #6C757D;
-  border: 1px solid #6C757D;
+  background-color: var(--bg-surface);
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;
@@ -22,7 +22,7 @@
 }
 
 .backButton:hover {
-  background-color: #f8f9fa;
+  background-color: var(--bg-hover);
 }
 
 .content {
@@ -41,7 +41,7 @@
 .title {
   font-size: 32px;
   font-weight: 600;
-  color: #333333;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -54,8 +54,8 @@
 }
 
 .actionButton {
-  background-color: #4A90E2;
-  color: white;
+  background-color: var(--primary);
+  color: var(--text-inverse);
   padding: 12px 24px;
   border: none;
   border-radius: 4px;
@@ -66,7 +66,7 @@
 }
 
 .actionButton:hover {
-  background-color: #357ABD;
+  background-color: var(--primary-hover);
 }
 
 .notification {
@@ -74,14 +74,14 @@
   bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #E8F5E9;
-  color: #2E7D32;
+  background-color: var(--success-bg);
+  color: var(--success-text);
   padding: 15px 30px;
   border-radius: 4px;
-  border-left: 4px solid #5CB85C;
+  border-left: 4px solid var(--success);
   font-size: 14px;
   font-weight: 500;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px var(--shadow);
   z-index: 1000;
   animation: slideUp 0.3s ease-out;
 }

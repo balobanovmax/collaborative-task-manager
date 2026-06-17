@@ -313,10 +313,10 @@ export const updateGroup = async (groupId, ownerId, updateData) => {
             throw new Error('Only group owner can update the group');
         }
         
-        const { name, description } = updateData;
+        const { name, description, is_public, join_password } = updateData;
         
         if (name !== undefined) {
-            const validationErrors = validateGroupInput(name, description || group.description);
+            const validationErrors = validateGroupInput(name, description !== undefined ? description : group.description);
             if (validationErrors.length > 0) {
                 throw new Error(validationErrors.join(', '));
             }
@@ -335,6 +335,44 @@ export const updateGroup = async (groupId, ownerId, updateData) => {
         if (description !== undefined) {
             fieldsToUpdate.push(`description = $${paramCount}`);
             values.push(description ? description.trim() : '');
+            paramCount++;
+        }
+
+        if (is_public !== undefined) {
+            if (is_public) {
+                fieldsToUpdate.push(`is_public = $${paramCount}`);
+                values.push(true);
+                paramCount++;
+
+                fieldsToUpdate.push(`join_password_hash = $${paramCount}`);
+                values.push(null);
+                paramCount++;
+            } else {
+                const switchingToPrivate = group.is_public;
+
+                if (switchingToPrivate && (!join_password || !join_password.trim())) {
+                    throw new Error('Password is required when making a group private');
+                }
+
+                fieldsToUpdate.push(`is_public = $${paramCount}`);
+                values.push(false);
+                paramCount++;
+
+                if (join_password && join_password.trim()) {
+                    const joinPasswordHash = await hashPassword(join_password.trim());
+                    fieldsToUpdate.push(`join_password_hash = $${paramCount}`);
+                    values.push(joinPasswordHash);
+                    paramCount++;
+                }
+            }
+        } else if (join_password && join_password.trim()) {
+            if (group.is_public) {
+                throw new Error('Cannot set a password on a public group');
+            }
+
+            const joinPasswordHash = await hashPassword(join_password.trim());
+            fieldsToUpdate.push(`join_password_hash = $${paramCount}`);
+            values.push(joinPasswordHash);
             paramCount++;
         }
         
