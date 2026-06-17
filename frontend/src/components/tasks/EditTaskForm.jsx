@@ -2,11 +2,12 @@ import { useState } from 'react';
 import styles from './EditTaskForm.module.css';
 import { taskAPI } from '../../services/api';
 
-function EditTaskForm({ tasks, onSuccess, onCancel }) {
+function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
   const [selectedTaskId, setSelectedTaskId] = useState(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -23,6 +24,7 @@ function EditTaskForm({ tasks, onSuccess, onCancel }) {
     } else {
       setDueDate('');
     }
+    setAssignedTo(task.assigned_to ? String(task.assigned_to) : '');
   };
 
   const handleSubmit = async (e) => {
@@ -52,7 +54,8 @@ function EditTaskForm({ tasks, onSuccess, onCancel }) {
       await taskAPI.updateTask(selectedTaskId, {
         title: title.trim(),
         description: description.trim() || null,
-        due_date: dueDate || null
+        due_date: dueDate || null,
+        assigned_to: assignedTo ? parseInt(assignedTo, 10) : null
       });
 
       onSuccess();
@@ -71,6 +74,7 @@ function EditTaskForm({ tasks, onSuccess, onCancel }) {
     setTitle('');
     setDescription('');
     setDueDate('');
+    setAssignedTo('');
     setErrorMessage('');
   };
 
@@ -111,6 +115,23 @@ function EditTaskForm({ tasks, onSuccess, onCancel }) {
               rows={4}
               maxLength={5000}
             />
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Assign To</label>
+            <select
+              className={styles.formInput}
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              disabled={isLoading}
+            >
+              <option value="">Unassigned</option>
+              {members.map((member) => (
+                <option key={member.user_id} value={member.user_id}>
+                  {member.username}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className={styles.formGroup}>
@@ -178,6 +199,9 @@ function EditTaskForm({ tasks, onSuccess, onCancel }) {
                 Due: {new Date(task.due_date).toLocaleDateString()}
               </p>
             )}
+            <p className={styles.taskItemMeta}>
+              Assigned to: {task.assignee?.username || task.assignee_username || 'Unassigned'}
+            </p>
           </div>
         ))}
       </div>

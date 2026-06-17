@@ -35,8 +35,11 @@ CREATE TABLE tasks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     due_date TIMESTAMP,
     completed_at TIMESTAMP,
-    completed_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+    completed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL
 );
+
+CREATE INDEX idx_tasks_assigned_to ON tasks(assigned_to);
 
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,

@@ -1,5 +1,85 @@
 import pool from '../config/database.js';
 
+const TASK_SELECT_FIELDS = `
+    t.id,
+    t.group_id,
+    t.title,
+    t.description,
+    t.is_completed,
+    t.created_by,
+    t.created_at,
+    t.due_date,
+    t.completed_at,
+    t.completed_by,
+    t.assigned_to,
+    u_creator.username as creator_username,
+    u_creator.email as creator_email,
+    u_completer.username as completer_username,
+    u_completer.email as completer_email,
+    u_assignee.username as assignee_username,
+    u_assignee.profile_picture_url as assignee_profile_picture_url
+`;
+
+const formatTaskFromRow = (task, extra = {}) => ({
+    id: task.id,
+    group_id: task.group_id,
+    group_name: task.group_name ?? extra.group_name,
+    title: task.title,
+    description: task.description,
+    is_completed: task.is_completed,
+    created_by: task.created_by,
+    created_at: task.created_at,
+    due_date: task.due_date,
+    completed_at: task.completed_at,
+    completed_by: task.completed_by,
+    assigned_to: task.assigned_to,
+    creator_username: task.creator_username,
+    assignee_username: task.assignee_username,
+    completer_username: task.completer_username,
+    creator: task.created_by ? {
+        id: task.created_by,
+        username: task.creator_username,
+        email: task.creator_email
+    } : null,
+    completer: task.completed_by ? {
+        id: task.completed_by,
+        username: task.completer_username,
+        email: task.completer_email
+    } : null,
+    assignee: task.assigned_to ? {
+        id: task.assigned_to,
+        username: task.assignee_username,
+        profile_picture_url: task.assignee_profile_picture_url
+    } : null
+});
+
+export const validateTaskAssignee = async (groupId, assigneeId) => {
+    if (assigneeId === null || assigneeId === undefined || assigneeId === '') {
+        return null;
+    }
+
+    const parsedAssigneeId = parseInt(assigneeId, 10);
+    if (isNaN(parsedAssigneeId) || parsedAssigneeId <= 0) {
+        throw new Error('Invalid assignee. Must be a valid group member.');
+    }
+
+    const memberCheck = await pool.query(`
+        SELECT 1
+        FROM group_members
+        WHERE group_id = $1 AND user_id = $2
+        UNION
+        SELECT 1
+        FROM groups
+        WHERE id = $1 AND owner_id = $2
+    `, [groupId, parsedAssigneeId]);
+
+    if (memberCheck.rows.length === 0) {
+        throw new Error('Assignee must be a member of this group.');
+    }
+
+    return parsedAssigneeId;
+};
+
 export const validateTaskInput = (title, description, dueDate) => {
     const errors = [];
     
@@ -61,7 +141,7 @@ export const validateTaskInput = (title, description, dueDate) => {
     };
 };
 
-export const createTask = async (groupId, createdBy, title, description, dueDate) => {
+export const createTask = async (groupId, createdBy, title, description, dueDate, assignedTo = null) => {
     try {
         // Validate required parameters
         if (!groupId || isNaN(groupId) || groupId <= 0) {
@@ -104,12 +184,14 @@ export const createTask = async (groupId, createdBy, title, description, dueDate
         if (!memberUserId && createdBy !== groupOwnerId) {
             throw new Error('You must be a member of this group to create tasks.');
         }
+
+        const validatedAssignee = await validateTaskAssignee(groupId, assignedTo);
         
         // Insert the new task
         const insertQuery = `
-            INSERT INTO tasks (group_id, title, description, created_by, due_date)
-            VALUES ($1, $2, $3, $4, $5)
-            RETURNING id, group_id, title, description, is_completed, created_by, created_at, due_date, completed_at, completed_by
+            INSERT INTO tasks (group_id, title, description, created_by, due_date, assigned_to)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING id
         `;
         
         const result = await pool.query(insertQuery, [
@@ -117,11 +199,11 @@ export const createTask = async (groupId, createdBy, title, description, dueDate
             cleanTitle,
             cleanDescription,
             createdBy,
-            cleanDueDate
+            cleanDueDate,
+            validatedAssignee
         ]);
         
-        // Return the created task
-        return result.rows[0];
+        return findTaskById(result.rows[0].id);
         
     } catch (error) {
         console.error('Error creating task:', error);
@@ -139,61 +221,23 @@ export const findTaskById = async (taskId) => {
         // Query to get task with creator and completer details
         const query = `
             SELECT 
-                t.id,
-                t.group_id,
-                t.title,
-                t.description,
-                t.is_completed,
-                t.created_by,
-                t.created_at,
-                t.due_date,
-                t.completed_at,
-                t.completed_by,
-                u_creator.username as creator_username,
-                u_creator.email as creator_email,
-                u_completer.username as completer_username,
-                u_completer.email as completer_email,
+                ${TASK_SELECT_FIELDS},
                 g.name as group_name
             FROM tasks t
             LEFT JOIN users u_creator ON t.created_by = u_creator.id
             LEFT JOIN users u_completer ON t.completed_by = u_completer.id
+            LEFT JOIN users u_assignee ON t.assigned_to = u_assignee.id
             LEFT JOIN groups g ON t.group_id = g.id
             WHERE t.id = $1
         `;
         
         const result = await pool.query(query, [taskId]);
         
-        // Return null if task not found
         if (result.rows.length === 0) {
             return null;
         }
         
-        const task = result.rows[0];
-        
-        // Structure the response with nested user objects for better organization
-        return {
-            id: task.id,
-            group_id: task.group_id,
-            group_name: task.group_name,
-            title: task.title,
-            description: task.description,
-            is_completed: task.is_completed,
-            created_by: task.created_by,
-            created_at: task.created_at,
-            due_date: task.due_date,
-            completed_at: task.completed_at,
-            completed_by: task.completed_by,
-            creator: task.created_by ? {
-                id: task.created_by,
-                username: task.creator_username,
-                email: task.creator_email
-            } : null,
-            completer: task.completed_by ? {
-                id: task.completed_by,
-                username: task.completer_username,
-                email: task.completer_email
-            } : null
-        };
+        return formatTaskFromRow(result.rows[0]);
         
     } catch (error) {
         console.error('Error finding task by ID:', error);
@@ -220,6 +264,8 @@ export const getTasksByGroup = async (groupId, options = {}) => {
         const {
             completedOnly = false,
             pendingOnly = false,
+            assignedTo = null,
+            unassignedOnly = false,
             sortBy = 'created_at',
             sortOrder = 'DESC'
         } = options;
@@ -242,57 +288,38 @@ export const getTasksByGroup = async (groupId, options = {}) => {
             whereClause += ' AND t.is_completed = true';
         } else if (pendingOnly && !completedOnly) {
             whereClause += ' AND t.is_completed = false';
+        } else if (pendingOnly && !completedOnly) {
+            whereClause += ' AND t.is_completed = false';
         }
-        // If both are true or both are false, show all tasks
+
+        const queryValues = [groupId];
+        if (unassignedOnly) {
+            whereClause += ' AND t.assigned_to IS NULL';
+        } else if (assignedTo !== null && assignedTo !== undefined) {
+            const parsedAssignedTo = parseInt(assignedTo, 10);
+            if (isNaN(parsedAssignedTo) || parsedAssignedTo <= 0) {
+                throw new Error('Invalid assignee filter.');
+            }
+            queryValues.push(parsedAssignedTo);
+            whereClause += ` AND t.assigned_to = $${queryValues.length}`;
+        }
         
-        // Build ORDER BY clause
         const orderClause = `ORDER BY t.${sortBy} ${sortOrder.toUpperCase()}`;
         
-        // Query to get all tasks for the group with creator details
         const query = `
             SELECT 
-                t.id,
-                t.group_id,
-                t.title,
-                t.description,
-                t.is_completed,
-                t.created_by,
-                t.created_at,
-                t.due_date,
-                t.completed_at,
-                t.completed_by,
-                u_creator.username as creator_username,
-                u_completer.username as completer_username
+                ${TASK_SELECT_FIELDS}
             FROM tasks t
             LEFT JOIN users u_creator ON t.created_by = u_creator.id
             LEFT JOIN users u_completer ON t.completed_by = u_completer.id
+            LEFT JOIN users u_assignee ON t.assigned_to = u_assignee.id
             ${whereClause}
             ${orderClause}
         `;
         
-        const result = await pool.query(query, [groupId]);
+        const result = await pool.query(query, queryValues);
         
-        // Structure the response with task summary and list
-        const tasks = result.rows.map(task => ({
-            id: task.id,
-            group_id: task.group_id,
-            title: task.title,
-            description: task.description,
-            is_completed: task.is_completed,
-            created_by: task.created_by,
-            created_at: task.created_at,
-            due_date: task.due_date,
-            completed_at: task.completed_at,
-            completed_by: task.completed_by,
-            creator: task.created_by ? {
-                id: task.created_by,
-                username: task.creator_username
-            } : null,
-            completer: task.completed_by ? {
-                id: task.completed_by,
-                username: task.completer_username
-            } : null
-        }));
+        const tasks = result.rows.map((task) => formatTaskFromRow(task, { group_name: groupInfo.name }));
         
         // Calculate task statistics
         const totalTasks = tasks.length;
@@ -339,11 +366,13 @@ export const updateTask = async (taskId, userId, updateData) => {
             throw new Error('Update data is required and must be an object.');
         }
         
-        const { title, description, due_date } = updateData;
+        const { title, description, due_date, assigned_to } = updateData;
         
-        // At least one field must be provided
-        if (title === undefined && description === undefined && due_date === undefined) {
-            throw new Error('At least one field (title, description, or due_date) must be provided for update.');
+        const hasContentUpdate = title !== undefined || description !== undefined || due_date !== undefined;
+        const hasAssigneeUpdate = assigned_to !== undefined;
+
+        if (!hasContentUpdate && !hasAssigneeUpdate) {
+            throw new Error('At least one field must be provided for update.');
         }
         
         // Get the existing task with group info
@@ -371,15 +400,14 @@ export const updateTask = async (taskId, userId, updateData) => {
         `;
         const membershipResult = await pool.query(membershipQuery, [existingTask.group_id, userId]);
         
-        if (membershipResult.rows.length === 0) {
+        if (membershipResult.rows.length === 0 && existingTask.group_owner_id !== userId) {
             throw new Error('You must be a member of the group to update tasks.');
         }
         
-        // Check permissions: must be task creator OR group owner
         const isTaskCreator = existingTask.created_by === userId;
         const isGroupOwner = existingTask.group_owner_id === userId;
         
-        if (!isTaskCreator && !isGroupOwner) {
+        if (hasContentUpdate && !isTaskCreator && !isGroupOwner) {
             throw new Error('You can only update tasks you created or if you are the group owner.');
         }
         
@@ -415,7 +443,6 @@ export const updateTask = async (taskId, userId, updateData) => {
                 
                 if (typeof due_date === 'string') {
                     if (due_date.trim() === '') {
-                        // Empty string is allowed (will be set to null)
                         dateToValidate = null;
                     } else {
                         dateToValidate = new Date(due_date);
@@ -430,6 +457,11 @@ export const updateTask = async (taskId, userId, updateData) => {
                     errors.push('Due date must be a valid date.');
                 }
             }
+        }
+
+        let validatedAssignee;
+        if (hasAssigneeUpdate) {
+            validatedAssignee = await validateTaskAssignee(existingTask.group_id, assigned_to);
         }
         
         if (errors.length > 0) {
@@ -474,25 +506,25 @@ export const updateTask = async (taskId, userId, updateData) => {
             queryValues.push(cleanedData.dueDate);
             paramCounter++;
         }
+
+        if (hasAssigneeUpdate) {
+            fieldsToUpdate.push(`assigned_to = $${paramCounter}`);
+            queryValues.push(validatedAssignee);
+            paramCounter++;
+        }
         
-        // Add task ID as the last parameter
         queryValues.push(taskId);
         
-        // Update the task
         const updateQuery = `
             UPDATE tasks 
             SET ${fieldsToUpdate.join(', ')}
             WHERE id = $${paramCounter}
-            RETURNING id, group_id, title, description, is_completed, created_by, created_at, due_date, completed_at, completed_by
+            RETURNING id
         `;
         
-        const updateResult = await pool.query(updateQuery, queryValues);
-        const updatedTask = updateResult.rows[0];
+        await pool.query(updateQuery, queryValues);
         
-        // Get the updated task with full details (creator info, etc.)
-        const fullTaskResult = await findTaskById(taskId);
-        
-        return fullTaskResult;
+        return findTaskById(taskId);
         
     } catch (error) {
         console.error('Error updating task:', error);

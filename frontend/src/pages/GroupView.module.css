@@ -292,8 +292,56 @@
 .tasksSectionHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 16px;
   margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.tasksHeaderLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.assigneeFilter {
+  padding: 8px 12px;
+  font-size: 14px;
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  background-color: var(--bg-input);
+  color: var(--text-primary);
+  min-width: 180px;
+  max-width: 100%;
+}
+
+.assigneeFilter:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.assigneeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.assigneeLabel {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.assigneeLabel strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.unassignedLabel {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
 }
 
 .manageTasksButton {

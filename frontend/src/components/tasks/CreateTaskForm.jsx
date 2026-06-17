@@ -2,10 +2,11 @@ import { useState } from 'react';
 import styles from './CreateTaskForm.module.css';
 import { taskAPI } from '../../services/api';
 
-function CreateTaskForm({ groupId, onSuccess, onCancel }) {
+function CreateTaskForm({ groupId, members = [], onSuccess, onCancel }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -45,7 +46,8 @@ function CreateTaskForm({ groupId, onSuccess, onCancel }) {
         groupId,
         title.trim(),
         description.trim() || null,
-        dueDate || null
+        dueDate || null,
+        assignedTo ? parseInt(assignedTo, 10) : null
       );
 
       onSuccess();
@@ -95,6 +97,23 @@ function CreateTaskForm({ groupId, onSuccess, onCancel }) {
             rows={4}
             maxLength={5000}
           />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Assign To (optional)</label>
+          <select
+            className={styles.formInput}
+            value={assignedTo}
+            onChange={(e) => setAssignedTo(e.target.value)}
+            disabled={isLoading}
+          >
+            <option value="">Unassigned</option>
+            {members.map((member) => (
+              <option key={member.user_id} value={member.user_id}>
+                {member.username}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className={styles.formGroup}>

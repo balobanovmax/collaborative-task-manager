@@ -5,7 +5,7 @@ import EditTaskForm from './EditTaskForm';
 import DeleteTaskForm from './DeleteTaskForm';
 import ToggleTaskForm from './ToggleTaskForm';
 
-function TaskManagementModal({ isOpen, onClose, groupId, tasks, onTaskUpdated }) {
+function TaskManagementModal({ isOpen, onClose, groupId, tasks, members, onTaskUpdated }) {
   const [selectedOperation, setSelectedOperation] = useState(null);
 
   if (!isOpen) return null;
@@ -66,7 +66,8 @@ function TaskManagementModal({ isOpen, onClose, groupId, tasks, onTaskUpdated })
       case 'create':
         return (
           <CreateTaskForm 
-            groupId={groupId} 
+            groupId={groupId}
+            members={members}
             onSuccess={handleSuccess}
             onCancel={() => setSelectedOperation(null)}
           />
@@ -75,6 +76,7 @@ function TaskManagementModal({ isOpen, onClose, groupId, tasks, onTaskUpdated })
         return (
           <EditTaskForm 
             tasks={tasks}
+            members={members}
             onSuccess={handleSuccess}
             onCancel={() => setSelectedOperation(null)}
           />

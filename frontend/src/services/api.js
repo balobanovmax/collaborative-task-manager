@@ -95,12 +95,13 @@ export const groupAPI = {
 };
 
 export const taskAPI = {
-  createTask: async (groupId, title, description, dueDate) => {
+  createTask: async (groupId, title, description, dueDate, assignedTo = null) => {
     const response = await api.post('/tasks', {
       group_id: groupId,
       title,
       description,
-      due_date: dueDate
+      due_date: dueDate,
+      assigned_to: assignedTo
     });
     return response.data;
   },

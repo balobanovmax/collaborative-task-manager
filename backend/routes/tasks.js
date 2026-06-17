@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.post('/', requireAuth, async (req, res) => {
     try {
-        const { group_id, title, description, due_date } = req.body;
+        const { group_id, title, description, due_date, assigned_to } = req.body;
         const createdBy = req.userId;
 
         // Validate required fields
@@ -25,11 +25,9 @@ router.post('/', requireAuth, async (req, res) => {
             });
         }
 
-        // Create the task
-        const newTask = await createTask(group_id, createdBy, title, description, due_date);
-        const fullTask = await findTaskById(newTask.id);
+        const newTask = await createTask(group_id, createdBy, title, description, due_date, assigned_to);
 
-        emitTaskCreated(group_id, fullTask);
+        emitTaskCreated(group_id, newTask);
 
         res.status(201).json({
             success: true,
@@ -103,7 +101,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     try {
         const taskId = parseInt(req.params.id);
         const userId = req.userId;
-        const { title, description, due_date } = req.body;
+        const { title, description, due_date, assigned_to } = req.body;
 
         // Validate task ID
         if (isNaN(taskId) || taskId <= 0) {
@@ -113,17 +111,16 @@ router.put('/:id', requireAuth, async (req, res) => {
             });
         }
 
-        // Prepare update data
         const updateData = {};
         if (title !== undefined) updateData.title = title;
         if (description !== undefined) updateData.description = description;
         if (due_date !== undefined) updateData.due_date = due_date;
+        if (assigned_to !== undefined) updateData.assigned_to = assigned_to;
 
-        // Check if at least one field is provided
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({
                 success: false,
-                message: 'At least one field (title, description, or due_date) must be provided for update.'
+                message: 'At least one field must be provided for update.'
             });
         }
 
@@ -223,7 +220,7 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
             });
         }
 
-        const { completed, sortBy, sortOrder } = req.query;
+        const { completed, sortBy, sortOrder, assignedTo, unassigned } = req.query;
         
         const options = {};
         
@@ -231,6 +228,12 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
             options.completedOnly = true;
         } else if (completed === 'false') {
             options.pendingOnly = true;
+        }
+
+        if (unassigned === 'true') {
+            options.unassignedOnly = true;
+        } else if (assignedTo) {
+            options.assignedTo = assignedTo;
         }
         
         if (sortBy) {

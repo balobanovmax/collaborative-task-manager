@@ -5,6 +5,7 @@ import Navbar from '../components/common/Navbar';
 import TaskManagementModal from '../components/tasks/TaskManagementModal';
 import ConfirmModal from '../components/common/ConfirmModal';
 import ChatPanel from '../components/chat/ChatPanel';
+import UserAvatar from '../components/common/UserAvatar';
 import { groupAPI } from '../services/api';
 import { getUser } from '../utils/auth';
 import {
@@ -21,6 +22,22 @@ import {
   onChatCleared,
   onGroupUpdated
 } from '../services/socket';
+
+const getTaskAssignee = (task) => {
+  if (task.assignee) {
+    return task.assignee;
+  }
+
+  if (task.assigned_to) {
+    return {
+      id: task.assigned_to,
+      username: task.assignee_username || 'Unknown',
+      profile_picture_url: task.assignee_profile_picture_url || null
+    };
+  }
+
+  return null;
+};
 
 function GroupView() {
   const { groupId } = useParams();
@@ -48,6 +65,27 @@ function GroupView() {
   const [editPassword, setEditPassword] = useState('');
   const [editError, setEditError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [assigneeFilter, setAssigneeFilter] = useState('all');
+
+  useEffect(() => {
+    setAssigneeFilter('all');
+  }, [groupId]);
+
+  const filteredTasks = tasks.filter((task) => {
+    if (assigneeFilter === 'all') {
+      return true;
+    }
+
+    if (assigneeFilter === 'unassigned') {
+      return !task.assigned_to;
+    }
+
+    if (assigneeFilter === 'me') {
+      return Number(task.assigned_to) === Number(currentUser?.id);
+    }
+
+    return Number(task.assigned_to) === Number(assigneeFilter);
+  });
 
   const fetchGroupData = useCallback(async (showLoading = true) => {
     try {
@@ -463,7 +501,26 @@ function GroupView() {
           <div className={styles.mainContent}>
             <div className={styles.tasksSection}>
               <div className={styles.tasksSectionHeader}>
-                <h2 className={styles.sectionTitle}>Tasks ({tasks.length})</h2>
+                <div className={styles.tasksHeaderLeft}>
+                  <h2 className={styles.sectionTitle}>
+                    Tasks ({filteredTasks.length}{filteredTasks.length !== tasks.length ? ` / ${tasks.length}` : ''})
+                  </h2>
+                  <select
+                    className={styles.assigneeFilter}
+                    value={assigneeFilter}
+                    onChange={(e) => setAssigneeFilter(e.target.value)}
+                    aria-label="Filter tasks by assignee"
+                  >
+                    <option value="all">All assignees</option>
+                    <option value="unassigned">Unassigned</option>
+                    <option value="me">Assigned to me</option>
+                    {members.map((member) => (
+                      <option key={member.user_id} value={member.user_id}>
+                        {member.username}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <button 
                   className={styles.manageTasksButton}
                   onClick={() => setIsModalOpen(true)}
@@ -476,10 +533,15 @@ function GroupView() {
                 <div className={styles.emptyState}>
                   <p>No tasks yet. Create one to get started!</p>
                 </div>
+              ) : filteredTasks.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <p>No tasks match this assignee filter.</p>
+                </div>
               ) : (
                 <div className={styles.tasksList}>
-                  {tasks.map((task) => {
+                  {filteredTasks.map((task) => {
                     const status = task.is_completed ? 'completed' : 'pending';
+                    const assignee = getTaskAssignee(task);
                     return (
                     <div key={task.id} className={styles.taskCard}>
                       <div className={styles.taskHeader}>
@@ -492,6 +554,23 @@ function GroupView() {
                       {task.description && (
                         <p className={styles.taskDescription}>{task.description}</p>
                       )}
+
+                      <div className={styles.assigneeRow}>
+                        {assignee ? (
+                          <>
+                            <UserAvatar
+                              username={assignee.username}
+                              profilePictureUrl={assignee.profile_picture_url}
+                              size="sm"
+                            />
+                            <span className={styles.assigneeLabel}>
+                              Assigned to <strong>{assignee.username}</strong>
+                            </span>
+                          </>
+                        ) : (
+                          <span className={styles.unassignedLabel}>Unassigned</span>
+                        )}
+                      </div>
                       
                       <div className={styles.taskMeta}>
                         <span className={styles.taskInfo}>
@@ -529,6 +608,7 @@ function GroupView() {
           onClose={() => setIsModalOpen(false)}
           groupId={parseInt(groupId)}
           tasks={tasks}
+          members={members}
           onTaskUpdated={handleTaskUpdated}
         />
 
