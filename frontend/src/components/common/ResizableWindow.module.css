@@ -54,6 +54,13 @@
   color: var(--text-primary);
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .body {
   flex: 1;
   min-height: 0;

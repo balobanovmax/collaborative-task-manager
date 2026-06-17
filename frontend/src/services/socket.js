@@ -127,6 +127,17 @@ export const leaveGroup = (groupId) => {
     }
 };
 
+export const emitChatTyping = (groupId, userId, username, isTyping) => {
+    if (socket && groupId && userId && username) {
+        socket.emit('chat-typing', {
+            groupId,
+            userId,
+            username,
+            isTyping: Boolean(isTyping)
+        });
+    }
+};
+
 export const onTaskCreated = (callback) => subscribe('task-created', callback);
 export const onTaskUpdated = (callback) => subscribe('task-updated', callback);
 export const onTaskDeleted = (callback) => subscribe('task-deleted', callback);
@@ -136,6 +147,7 @@ export const onMemberRemoved = (callback) => subscribe('member-removed', callbac
 export const onGroupUpdated = (callback) => subscribe('group-updated', callback);
 export const onMessageSent = (callback) => subscribe('message-sent', callback);
 export const onChatCleared = (callback) => subscribe('chat-cleared', callback);
+export const onChatTyping = (callback) => subscribe('chat-typing', callback);
 export const onNotificationReceived = (callback) => subscribe('notification-received', callback);
 export const onJoinRequestUpdated = (callback) => subscribe('join-request-updated', callback);
 export const onTaskCommentCreated = (callback) => subscribe('task-comment-created', callback);

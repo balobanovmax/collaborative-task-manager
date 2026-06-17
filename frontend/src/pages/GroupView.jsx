@@ -1124,6 +1124,7 @@ function GroupView() {
           groupId={parseInt(groupId)}
           isOpen={isChatOpen}
           onClose={() => setIsChatOpen(false)}
+          isOwner={Number(currentUser?.id) === Number(group?.owner_id)}
           members={members}
           zIndex={textChatZ}
           onFocus={focusTextChatWindow}

@@ -1,18 +1,35 @@
 import styles from './ConfirmModal.module.css';
 
-function ConfirmModal({ isOpen, title, message, onConfirm, onCancel, confirmText = 'Confirm', cancelText = 'Cancel' }) {
+function ConfirmModal({
+  isOpen,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  confirmText = 'Confirm',
+  cancelText = 'Cancel',
+  compact = false,
+  confirmDisabled = false
+}) {
   if (!isOpen) return null;
 
   return (
     <div className={styles.modalOverlay} onClick={onCancel}>
-      <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`${styles.modalContent} ${compact ? styles.modalContentCompact : ''}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className={styles.modalTitle}>{title}</h2>
         <p className={styles.modalMessage}>{message}</p>
         <div className={styles.modalActions}>
-          <button className={styles.cancelButton} onClick={onCancel}>
+          <button className={styles.cancelButton} onClick={onCancel} disabled={confirmDisabled}>
             {cancelText}
           </button>
-          <button className={styles.confirmButton} onClick={onConfirm}>
+          <button
+            className={styles.confirmButton}
+            onClick={onConfirm}
+            disabled={confirmDisabled}
+          >
             {confirmText}
           </button>
         </div>

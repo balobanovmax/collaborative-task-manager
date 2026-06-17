@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import styles from './ChatPanel.module.css';
 import { messageAPI } from '../../services/api';
-import { onMessageSent, onChatCleared } from '../../services/socket';
+import { onMessageSent, onChatCleared, onChatTyping, emitChatTyping } from '../../services/socket';
 import { getUser } from '../../utils/auth';
 import {
   renderMessageWithMentions,
@@ -14,15 +14,22 @@ import {
   getExtensionForMimeType,
   formatVoiceDuration
 } from '../../utils/voiceMessage';
+import { formatTypingLabel } from '../../utils/chatTyping';
 import UserAvatar from '../common/UserAvatar';
 import ResizableWindow from '../common/ResizableWindow';
+import ConfirmModal from '../common/ConfirmModal';
 import VoiceMessagePlayer from './VoiceMessagePlayer';
 
-function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFocus }) {
+const TYPING_IDLE_MS = 2000;
+const TYPING_EXPIRE_MS = 4000;
+
+function ChatPanel({ groupId, isOpen, onClose, isOwner = false, members = [], zIndex = 1000, onFocus }) {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
   const [error, setError] = useState('');
   const [mentionQuery, setMentionQuery] = useState(null);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
@@ -30,6 +37,7 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [voicePreview, setVoicePreview] = useState(null);
   const [isSendingVoice, setIsSendingVoice] = useState(false);
+  const [typingUsers, setTypingUsers] = useState([]);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -37,6 +45,9 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
   const recordingChunksRef = useRef([]);
   const recordingTimerRef = useRef(null);
   const voicePreviewRef = useRef(null);
+  const ownTypingStopTimeoutRef = useRef(null);
+  const isOwnTypingActiveRef = useRef(false);
+  const typingExpiryTimeoutsRef = useRef(new Map());
   const currentUser = getUser();
 
   const mentionSuggestions = mentionQuery === null
@@ -61,7 +72,67 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, typingUsers]);
+
+  const clearTypingExpiry = (userId) => {
+    const timeoutId = typingExpiryTimeoutsRef.current.get(userId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      typingExpiryTimeoutsRef.current.delete(userId);
+    }
+  };
+
+  const removeTypingUser = (userId) => {
+    clearTypingExpiry(userId);
+    setTypingUsers((prev) => prev.filter((user) => Number(user.userId) !== Number(userId)));
+  };
+
+  const scheduleTypingExpiry = (userId) => {
+    clearTypingExpiry(userId);
+    const timeoutId = setTimeout(() => {
+      removeTypingUser(userId);
+    }, TYPING_EXPIRE_MS);
+    typingExpiryTimeoutsRef.current.set(userId, timeoutId);
+  };
+
+  const stopOwnTyping = () => {
+    if (ownTypingStopTimeoutRef.current) {
+      clearTimeout(ownTypingStopTimeoutRef.current);
+      ownTypingStopTimeoutRef.current = null;
+    }
+
+    if (!isOwnTypingActiveRef.current || !currentUser?.id || !groupId) {
+      return;
+    }
+
+    isOwnTypingActiveRef.current = false;
+    emitChatTyping(groupId, currentUser.id, currentUser.username, false);
+  };
+
+  const updateOwnTypingState = (value) => {
+    if (!isOpen || !currentUser?.id || !groupId) {
+      return;
+    }
+
+    const hasText = value.trim().length > 0;
+    if (!hasText) {
+      stopOwnTyping();
+      return;
+    }
+
+    if (!isOwnTypingActiveRef.current) {
+      isOwnTypingActiveRef.current = true;
+      emitChatTyping(groupId, currentUser.id, currentUser.username, true);
+    }
+
+    if (ownTypingStopTimeoutRef.current) {
+      clearTimeout(ownTypingStopTimeoutRef.current);
+    }
+
+    ownTypingStopTimeoutRef.current = setTimeout(() => {
+      stopOwnTyping();
+    }, TYPING_IDLE_MS);
+  };
 
   useEffect(() => {
     voicePreviewRef.current = voicePreview;
@@ -72,6 +143,9 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
       stopRecordingTimer();
       cleanupRecordingStream();
       revokeVoicePreview(voicePreviewRef.current);
+      stopOwnTyping();
+      typingExpiryTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+      typingExpiryTimeoutsRef.current.clear();
     };
   }, []);
 
@@ -80,12 +154,18 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
       return undefined;
     }
 
+    stopOwnTyping();
+    setTypingUsers([]);
+    typingExpiryTimeoutsRef.current.forEach((timeoutId) => clearTimeout(timeoutId));
+    typingExpiryTimeoutsRef.current.clear();
+
     stopRecordingTimer();
     cleanupRecordingStream();
     revokeVoicePreview(voicePreviewRef.current);
     setVoicePreview(null);
     setIsRecording(false);
     setRecordingSeconds(0);
+    setIsClearConfirmOpen(false);
   }, [isOpen]);
 
   useEffect(() => {
@@ -113,11 +193,40 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
       setMessages([]);
     });
 
+    const unsubscribeTyping = onChatTyping((data) => {
+      if (Number(data.groupId) !== Number(groupId)) {
+        return;
+      }
+
+      if (Number(data.userId) === Number(currentUser?.id)) {
+        return;
+      }
+
+      if (!data.isTyping) {
+        removeTypingUser(data.userId);
+        return;
+      }
+
+      setTypingUsers((prev) => {
+        const exists = prev.some((user) => Number(user.userId) === Number(data.userId));
+        if (exists) {
+          return prev.map((user) =>
+            Number(user.userId) === Number(data.userId)
+              ? { ...user, username: data.username }
+              : user
+          );
+        }
+        return [...prev, { userId: data.userId, username: data.username }];
+      });
+      scheduleTypingExpiry(data.userId);
+    });
+
     return () => {
       unsubscribeMessage();
       unsubscribeClear();
+      unsubscribeTyping();
     };
-  }, [isOpen, groupId]);
+  }, [isOpen, groupId, currentUser?.id]);
 
   const fetchMessages = async () => {
     try {
@@ -135,10 +244,15 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
   const handleInputChange = (e) => {
     const value = e.target.value;
     setNewMessage(value);
+    updateOwnTypingState(value);
 
     const query = getMentionQueryAtCursor(value, e.target.selectionStart);
     setMentionQuery(query);
     setActiveSuggestionIndex(0);
+  };
+
+  const handleInputBlur = () => {
+    stopOwnTyping();
   };
 
   const applyMention = (username) => {
@@ -192,6 +306,7 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
     const messageToSend = newMessage.trim();
     setNewMessage('');
     setMentionQuery(null);
+    stopOwnTyping();
 
     try {
       setIsSending(true);
@@ -365,6 +480,35 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
     }
   };
 
+  const handleOpenClearConfirm = () => {
+    setIsClearConfirmOpen(true);
+  };
+
+  const handleCancelClearChat = () => {
+    if (isClearing) {
+      return;
+    }
+    setIsClearConfirmOpen(false);
+  };
+
+  const handleConfirmClearChat = async () => {
+    if (isClearing) {
+      return;
+    }
+
+    try {
+      setIsClearing(true);
+      setError('');
+      await messageAPI.clearChat(groupId);
+      setMessages([]);
+      setIsClearConfirmOpen(false);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to delete chat history');
+    } finally {
+      setIsClearing(false);
+    }
+  };
+
   const formatTime = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -405,6 +549,7 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
   const groupedMessages = groupMessagesByDate(messages);
 
   return (
+    <>
     <ResizableWindow
       isOpen={isOpen}
       onClose={onClose}
@@ -414,6 +559,17 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
       zIndex={zIndex}
       onFocus={onFocus}
       ariaLabel="Text chat"
+      headerActions={isOwner ? (
+        <button
+          type="button"
+          className={styles.clearChatButton}
+          onClick={handleOpenClearConfirm}
+          disabled={isClearing || messages.length === 0}
+          title="Delete all chat history"
+        >
+          {isClearing ? '...' : 'Clear history'}
+        </button>
+      ) : null}
     >
       <div className={styles.chatPanel}>
         <div className={styles.messagesContainer}>
@@ -476,6 +632,16 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
                 })}
               </div>
             ))
+          )}
+          {typingUsers.length > 0 && (
+            <div className={styles.typingIndicator} aria-live="polite">
+              <span className={styles.typingLabel}>{formatTypingLabel(typingUsers)}</span>
+              <span className={styles.typingDots} aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
+            </div>
           )}
           <div ref={messagesEndRef} />
         </div>
@@ -553,6 +719,7 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
               placeholder="Type a message... use @username to mention"
               value={newMessage}
               onChange={handleInputChange}
+              onBlur={handleInputBlur}
               onKeyDown={handleInputKeyDown}
               disabled={isSending || isRecording || isSendingVoice}
               maxLength={2000}
@@ -578,6 +745,19 @@ function ChatPanel({ groupId, isOpen, onClose, members = [], zIndex = 1000, onFo
         </form>
       </div>
     </ResizableWindow>
+
+    <ConfirmModal
+      isOpen={isClearConfirmOpen}
+      compact
+      title="Clear chat history?"
+      message="Delete all text chat messages for this group? This cannot be undone."
+      confirmText={isClearing ? 'Deleting...' : 'Delete history'}
+      cancelText="Cancel"
+      onConfirm={handleConfirmClearChat}
+      onCancel={handleCancelClearChat}
+      confirmDisabled={isClearing}
+    />
+    </>
   );
 }
 

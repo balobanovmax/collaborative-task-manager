@@ -20,6 +20,32 @@
   box-shadow: 0 10px 25px var(--shadow-md);
 }
 
+.modalContentCompact {
+  max-width: 320px;
+  padding: 20px 22px;
+}
+
+.modalContentCompact .modalTitle {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.modalContentCompact .modalMessage {
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.modalContentCompact .modalActions {
+  gap: 10px;
+}
+
+.modalContentCompact .cancelButton,
+.modalContentCompact .confirmButton {
+  padding: 8px 16px;
+  min-width: 88px;
+  font-size: 13px;
+}
+
 .modalTitle {
   font-size: 22px;
   font-weight: 600;
@@ -70,5 +96,11 @@
 
 .confirmButton:hover {
   background-color: var(--danger-hover);
+}
+
+.cancelButton:disabled,
+.confirmButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 

@@ -41,7 +41,8 @@ function ResizableWindow({
   defaultSize = { width: 380, height: 560 },
   zIndex = 1000,
   onFocus,
-  ariaLabel
+  ariaLabel,
+  headerActions = null
 }) {
   const [{ position, size }, setWindowState] = useState(() => {
     const clamped = clampWindowToViewport(defaultPosition, defaultSize);
@@ -168,14 +169,17 @@ function ResizableWindow({
           <h3 className={styles.title}>{title}</h3>
           {subtitle ? <p className={styles.subtitle}>{subtitle}</p> : null}
         </div>
-        <button
-          type="button"
-          className={styles.closeButton}
-          onClick={onClose}
-          aria-label={`Close ${title}`}
-        >
-          ×
-        </button>
+        <div className={styles.headerActions}>
+          {headerActions}
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={onClose}
+            aria-label={`Close ${title}`}
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       <div className={styles.body}>

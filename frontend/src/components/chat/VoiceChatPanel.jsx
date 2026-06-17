@@ -1,11 +1,39 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import styles from './VoiceChatPanel.module.css';
 import UserAvatar from '../common/UserAvatar';
 import ResizableWindow from '../common/ResizableWindow';
 import { MicStatusIcon, CameraStatusIcon, MicOnIcon, MicOffIcon, CameraOnIcon, CameraOffIcon } from './VoiceIcons';
 
-function VideoTile({ participant, stream, isLocal = false, micEnabled, cameraEnabled }) {
+const DEFAULT_TILE_WIDTH = 220;
+const DEFAULT_TILE_HEIGHT = 186;
+const MIN_TILE_WIDTH = 160;
+const MAX_TILE_WIDTH = 520;
+const MIN_TILE_HEIGHT = 132;
+const MAX_TILE_HEIGHT = 420;
+
+const DEFAULT_TILE_SIZE = {
+  width: DEFAULT_TILE_WIDTH,
+  height: DEFAULT_TILE_HEIGHT
+};
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+
+const clampTileSize = (size) => ({
+  width: clamp(size.width, MIN_TILE_WIDTH, MAX_TILE_WIDTH),
+  height: clamp(size.height, MIN_TILE_HEIGHT, MAX_TILE_HEIGHT)
+});
+
+function VideoTile({
+  participant,
+  stream,
+  isLocal = false,
+  micEnabled,
+  cameraEnabled,
+  tileSize = DEFAULT_TILE_SIZE,
+  onTileSizeChange
+}) {
   const videoRef = useRef(null);
+  const resizeRef = useRef(null);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -27,27 +55,83 @@ function VideoTile({ participant, stream, isLocal = false, micEnabled, cameraEna
     };
   }, [stream, cameraEnabled]);
 
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      if (!resizeRef.current || !onTileSizeChange) {
+        return;
+      }
+
+      const { startX, startY, originWidth, originHeight } = resizeRef.current;
+      onTileSizeChange(clampTileSize({
+        width: originWidth + (event.clientX - startX),
+        height: originHeight + (event.clientY - startY)
+      }));
+    };
+
+    const handleMouseUp = () => {
+      resizeRef.current = null;
+      document.body.style.removeProperty('user-select');
+      document.body.style.removeProperty('cursor');
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.removeProperty('user-select');
+      document.body.style.removeProperty('cursor');
+    };
+  }, [onTileSizeChange]);
+
+  const handleResizeStart = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    resizeRef.current = {
+      startX: event.clientX,
+      startY: event.clientY,
+      originWidth: tileSize.width,
+      originHeight: tileSize.height
+    };
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'nwse-resize';
+  };
+
+  const handleResizeReset = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    onTileSizeChange?.(DEFAULT_TILE_SIZE);
+  };
+
   const showVideo = stream && cameraEnabled;
 
   return (
-    <div className={styles.videoTile}>
-      {showVideo ? (
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className={`${styles.video} ${isLocal ? styles.localVideo : ''}`}
-        />
-      ) : (
-        <div className={styles.videoPlaceholder}>
-          <UserAvatar
-            username={participant.username}
-            profilePictureUrl={participant.profile_picture_url}
-            size="lg"
+    <div
+      className={styles.videoTile}
+      style={{
+        width: `${tileSize.width}px`,
+        height: `${tileSize.height}px`
+      }}
+    >
+      <div className={styles.videoArea}>
+        {showVideo ? (
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className={`${styles.video} ${isLocal ? styles.localVideo : ''}`}
           />
-        </div>
-      )}
+        ) : (
+          <div className={styles.videoPlaceholder}>
+            <UserAvatar
+              username={participant.username}
+              profilePictureUrl={participant.profile_picture_url}
+              size="lg"
+            />
+          </div>
+        )}
+      </div>
       <div className={styles.videoLabel}>
         <span>{isLocal ? `${participant.username} (You)` : participant.username}</span>
         <span className={styles.statusIcons}>
@@ -55,6 +139,13 @@ function VideoTile({ participant, stream, isLocal = false, micEnabled, cameraEna
           <CameraStatusIcon enabled={cameraEnabled} size={14} />
         </span>
       </div>
+      <div
+        className={styles.tileResizeHandle}
+        onMouseDown={handleResizeStart}
+        onDoubleClick={handleResizeReset}
+        title="Drag to resize · double-click to reset"
+        aria-label="Resize participant tile"
+      />
     </div>
   );
 }
@@ -79,6 +170,20 @@ function VoiceChatPanel({
   zIndex = 1001,
   onFocus
 }) {
+  const [tileSizes, setTileSizes] = useState({});
+
+  const getTileSize = useCallback(
+    (userId) => tileSizes[userId] ?? DEFAULT_TILE_SIZE,
+    [tileSizes]
+  );
+
+  const setTileSize = useCallback((userId, size) => {
+    setTileSizes((prev) => ({
+      ...prev,
+      [userId]: clampTileSize(size)
+    }));
+  }, []);
+
   const getParticipantMeta = (userId) => {
     const rosterEntry = participants.find((p) => Number(p.user_id) === Number(userId));
     const memberEntry = members.find((m) => Number(m.user_id) === Number(userId));
@@ -115,7 +220,7 @@ function VoiceChatPanel({
       title="Voice & Video Chat"
       subtitle={
         isInVoice
-          ? `${participants.length} teammate${participants.length === 1 ? '' : 's'} in voice · you can minimize and keep working`
+          ? `${participants.length} teammate${participants.length === 1 ? '' : 's'} in voice · drag tile corners to resize`
           : 'Connecting...'
       }
       defaultPosition={{ x: 500, y: 88 }}
@@ -154,6 +259,8 @@ function VoiceChatPanel({
               isLocal
               micEnabled={micEnabled}
               cameraEnabled={cameraEnabled}
+              tileSize={getTileSize(localParticipant.user_id)}
+              onTileSizeChange={(size) => setTileSize(localParticipant.user_id, size)}
             />
           )}
 
@@ -166,6 +273,8 @@ function VoiceChatPanel({
                 stream={remoteStreams[participant.user_id]}
                 micEnabled={meta.mic_enabled}
                 cameraEnabled={meta.camera_enabled}
+                tileSize={getTileSize(participant.user_id)}
+                onTileSizeChange={(size) => setTileSize(participant.user_id, size)}
               />
             );
           })}

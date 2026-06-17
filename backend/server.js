@@ -107,6 +107,23 @@ io.on('connection', (socket) => {
         console.log(`Socket ${socket.id} left group-${groupId}`);
     });
 
+    socket.on('chat-typing', (payload = {}) => {
+        const groupId = parseInt(payload.groupId, 10);
+        const userId = parseInt(payload.userId, 10);
+        const username = typeof payload.username === 'string' ? payload.username.trim() : '';
+
+        if (!groupId || !userId || !username) {
+            return;
+        }
+
+        socket.to(`group-${groupId}`).emit('chat-typing', {
+            groupId,
+            userId,
+            username,
+            isTyping: Boolean(payload.isTyping)
+        });
+    });
+
     socket.on('disconnect', () => {
         console.log('Client disconnected:', socket.id);
     });
