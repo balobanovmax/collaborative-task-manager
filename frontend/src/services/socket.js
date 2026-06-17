@@ -143,6 +143,7 @@ export const onTaskAttachmentAdded = (callback) => subscribe('task-attachment-ad
 export const onTaskAttachmentDeleted = (callback) => subscribe('task-attachment-deleted', callback);
 export const onTaskDrawingAdded = (callback) => subscribe('task-drawing-added', callback);
 export const onTaskDrawingDeleted = (callback) => subscribe('task-drawing-deleted', callback);
+export const onVoiceRosterUpdated = (callback) => subscribe('voice-roster-updated', callback);
 
 export const removeAllListeners = () => {
     Object.values(subscribers).forEach((callbackSet) => {

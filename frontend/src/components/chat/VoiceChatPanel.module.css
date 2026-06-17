@@ -1,0 +1,236 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-light);
+  z-index: 999;
+}
+
+.panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: min(520px, 100%);
+  height: 100vh;
+  background: var(--bg-surface);
+  border-left: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  box-shadow: -2px 0 8px var(--shadow-sm);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-page);
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--text-subtle);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.participantList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--bg-muted);
+}
+
+.participantListTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-subtle);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 4px;
+}
+
+.participantEmpty {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.participantChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.loadingState {
+  padding: 16px 20px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.errorMessage {
+  margin: 12px 20px 0;
+  padding: 10px 12px;
+  background: var(--danger-bg);
+  color: var(--danger-hover);
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.videoGrid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  align-content: start;
+  background: var(--bg-surface-alt);
+}
+
+.videoTile {
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+}
+
+.video {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  background: #000;
+}
+
+.localVideo {
+  transform: scaleX(-1);
+}
+
+.videoPlaceholder {
+  height: 130px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-muted);
+}
+
+.videoLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.statusIcons {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-subtle);
+}
+
+.chipIcon {
+  margin-left: 4px;
+  color: var(--text-subtle);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border-light);
+  background: var(--bg-page);
+}
+
+.controlButton,
+.minimizeButton,
+.leaveButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+.controlButton:hover:not(:disabled),
+.minimizeButton:hover,
+.leaveButton:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.controlButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.controlActive {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.minimizeButton {
+  margin-left: auto;
+}
+
+.leaveButton {
+  background: var(--danger);
+  color: var(--text-inverse);
+  border-color: var(--danger);
+}
+
+.leaveButton:hover {
+  background: var(--danger-hover);
+  color: var(--text-inverse);
+  border-color: var(--danger-hover);
+}
+
+.hiddenAudio {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .panel {
+    width: 100%;
+  }
+}

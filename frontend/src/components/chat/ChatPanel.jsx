@@ -228,7 +228,7 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner, members = [] }) {
     <div className={styles.chatOverlay} onClick={onClose}>
       <div className={styles.chatPanel} onClick={(e) => e.stopPropagation()}>
         <div className={styles.chatHeader}>
-          <h3 className={styles.chatTitle}>Group Chat</h3>
+          <h3 className={styles.chatTitle}>Text Chat</h3>
           <div className={styles.headerButtons}>
             {isOwner && (
               <button 

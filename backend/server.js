@@ -16,14 +16,25 @@ import taskRoutes from './routes/tasks.js';
 import messageRoutes from './routes/messages.js';
 import notificationRoutes from './routes/notifications.js';
 import { setSocketIO } from './utils/socket.js';
+import { registerVoiceHandlers } from './utils/voiceRooms.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 const httpServer = createServer(app);
+const isLocalDevOrigin = (origin) => {
+    if (!origin) {
+        return true;
+    }
+
+    return /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin);
+};
+
 const io = new Server(httpServer, {
     cors: {
-        origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001'],
+        origin: (origin, callback) => {
+            callback(null, isLocalDevOrigin(origin));
+        },
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
         credentials: true
     },
@@ -100,6 +111,8 @@ io.on('connection', (socket) => {
         console.log('Client disconnected:', socket.id);
     });
 });
+
+registerVoiceHandlers(io);
 
 httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

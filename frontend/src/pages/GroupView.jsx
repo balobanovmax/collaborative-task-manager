@@ -9,9 +9,14 @@ import TaskDrawings from '../components/tasks/TaskDrawings';
 import ConfirmModal from '../components/common/ConfirmModal';
 import MemberProfileModal from '../components/groups/MemberProfileModal';
 import ChatPanel from '../components/chat/ChatPanel';
+import VoiceChatPanel from '../components/chat/VoiceChatPanel';
+import VoiceChatDock from '../components/chat/VoiceChatDock';
+import VoiceRemoteAudio from '../components/chat/VoiceRemoteAudio';
+import { MicStatusIcon, CameraStatusIcon } from '../components/chat/VoiceIcons';
 import UserAvatar from '../components/common/UserAvatar';
 import { groupAPI, userAPI } from '../services/api';
 import { getUser } from '../utils/auth';
+import { useVoiceChat } from '../hooks/useVoiceChat';
 import {
   connectSocket,
   joinGroup,
@@ -28,8 +33,10 @@ import {
   onJoinRequestUpdated,
   onTaskCommentCreated,
   onTaskAttachmentAdded,
-  onTaskDrawingAdded
+  onTaskDrawingAdded,
+  onVoiceRosterUpdated
 } from '../services/socket';
+import { requestVoiceRoster } from '../services/voiceChat';
 
 const getTaskAssignee = (task) => {
   if (task.assignee) {
@@ -62,6 +69,9 @@ function GroupView() {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, memberId: null, memberName: '' });
   const [removedMessage, setRemovedMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isVoiceChatOpen, setIsVoiceChatOpen] = useState(false);
+  const [voiceParticipants, setVoiceParticipants] = useState([]);
+  const voiceChat = useVoiceChat(parseInt(groupId, 10), currentUser);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [unreadMentionCount, setUnreadMentionCount] = useState(0);
   const isChatOpenRef = useRef(false);
@@ -166,7 +176,24 @@ function GroupView() {
   useEffect(() => {
     setUnreadMessageCount(0);
     setUnreadMentionCount(0);
+    setVoiceParticipants([]);
+    setIsVoiceChatOpen(false);
   }, [groupId]);
+
+  const handleEnterVoiceChat = async () => {
+    if (!voiceChat.isInVoice && !voiceChat.isConnecting) {
+      const joined = await voiceChat.join();
+      if (!joined) {
+        return;
+      }
+    }
+    setIsVoiceChatOpen(true);
+  };
+
+  const handleLeaveVoiceChat = () => {
+    voiceChat.leave();
+    setIsVoiceChatOpen(false);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -179,6 +206,13 @@ function GroupView() {
       if (!mounted) return;
       
       joinGroup(groupIdInt);
+      requestVoiceRoster(groupIdInt);
+
+      unsubscribers.push(onVoiceRosterUpdated((data) => {
+        if (mounted && Number(data.groupId) === groupIdInt) {
+          setVoiceParticipants(data.participants || []);
+        }
+      }));
 
       unsubscribers.push(onTaskCreated((data) => {
         if (mounted) {
@@ -734,26 +768,63 @@ function GroupView() {
                 </div>
               )}
             </div>
-            <button
-              className={`${styles.chatButton} ${unreadMessageCount > 0 ? styles.chatButtonNotification : ''} ${unreadMentionCount > 0 ? styles.chatButtonMention : ''}`}
-              onClick={() => {
-                setIsChatOpen(true);
-                setUnreadMessageCount(0);
-                setUnreadMentionCount(0);
-              }}
-              title={
-                unreadMessageCount > 0
-                  ? `${unreadMessageCount} unread message${unreadMessageCount === 1 ? '' : 's'}${unreadMentionCount > 0 ? `, ${unreadMentionCount} mentioned you` : ''}`
-                  : 'Open group chat'
-              }
-            >
-              Enter Chat
-              {unreadMessageCount > 0 && (
-                <span className={`${styles.chatBadge} ${unreadMentionCount > 0 ? styles.chatBadgeMention : ''}`}>
-                  {unreadMentionCount > 0 ? `@${unreadMessageCount > 99 ? '99+' : unreadMessageCount}` : (unreadMessageCount > 99 ? '99+' : unreadMessageCount)}
-                </span>
-              )}
-            </button>
+            <div className={styles.chatButtons}>
+              <button
+                className={`${styles.chatButton} ${unreadMessageCount > 0 ? styles.chatButtonNotification : ''} ${unreadMentionCount > 0 ? styles.chatButtonMention : ''}`}
+                onClick={() => {
+                  setIsChatOpen(true);
+                  setUnreadMessageCount(0);
+                  setUnreadMentionCount(0);
+                }}
+                title={
+                  unreadMessageCount > 0
+                    ? `${unreadMessageCount} unread message${unreadMessageCount === 1 ? '' : 's'}${unreadMentionCount > 0 ? `, ${unreadMentionCount} mentioned you` : ''}`
+                    : 'Open text chat'
+                }
+              >
+                Enter Text Chat
+                {unreadMessageCount > 0 && (
+                  <span className={`${styles.chatBadge} ${unreadMentionCount > 0 ? styles.chatBadgeMention : ''}`}>
+                    {unreadMentionCount > 0 ? `@${unreadMessageCount > 99 ? '99+' : unreadMessageCount}` : (unreadMessageCount > 99 ? '99+' : unreadMessageCount)}
+                  </span>
+                )}
+              </button>
+
+              <button
+                className={`${styles.voiceChatButton} ${(voiceParticipants.length > 0 || voiceChat.isInVoice) ? styles.voiceChatButtonActive : ''}`}
+                onClick={handleEnterVoiceChat}
+                disabled={voiceChat.isConnecting}
+                title={
+                  voiceChat.isInVoice
+                    ? 'Open voice chat panel (you are connected)'
+                    : voiceParticipants.length > 0
+                      ? `${voiceParticipants.length} teammate${voiceParticipants.length === 1 ? '' : 's'} in voice chat`
+                      : 'Join voice and video chat'
+                }
+              >
+                {voiceChat.isInVoice ? 'Open Voice Chat' : 'Enter Voice Chat'}
+                {(voiceParticipants.length > 0 || voiceChat.isInVoice) && (
+                  <span className={styles.voiceBadge}>
+                    {voiceParticipants.length > 99 ? '99+' : Math.max(voiceParticipants.length, voiceChat.isInVoice ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {voiceParticipants.length > 0 && (
+              <div className={styles.voiceRosterSection}>
+                <span className={styles.voiceRosterTitle}>In voice chat</span>
+                <div className={styles.voiceRosterList}>
+                  {voiceParticipants.map((participant) => (
+                    <span key={participant.user_id} className={styles.voiceRosterChip}>
+                      {participant.username}
+                      <MicStatusIcon enabled={participant.mic_enabled} size={12} className={styles.voiceRosterIcon} />
+                      <CameraStatusIcon enabled={participant.camera_enabled} size={12} className={styles.voiceRosterIcon} />
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className={styles.mainContent}>
@@ -915,6 +986,40 @@ function GroupView() {
           onClose={() => setIsChatOpen(false)}
           isOwner={currentUser?.id === group?.owner_id}
           members={members}
+        />
+
+        {voiceChat.isInVoice && (
+          <VoiceRemoteAudio remoteStreams={voiceChat.remoteStreams} />
+        )}
+
+        <VoiceChatDock
+          isVisible={voiceChat.isInVoice && !isVoiceChatOpen}
+          micEnabled={voiceChat.micEnabled}
+          cameraEnabled={voiceChat.cameraEnabled}
+          participantCount={voiceChat.participants.length || 1}
+          onToggleMic={voiceChat.toggleMic}
+          onToggleCamera={voiceChat.toggleCamera}
+          onExpand={() => setIsVoiceChatOpen(true)}
+          onLeave={handleLeaveVoiceChat}
+        />
+
+        <VoiceChatPanel
+          groupId={parseInt(groupId, 10)}
+          isOpen={isVoiceChatOpen}
+          onMinimize={() => setIsVoiceChatOpen(false)}
+          onLeave={handleLeaveVoiceChat}
+          members={members}
+          currentUser={currentUser}
+          isInVoice={voiceChat.isInVoice}
+          isConnecting={voiceChat.isConnecting}
+          error={voiceChat.error}
+          participants={voiceChat.participants}
+          localStream={voiceChat.localStream}
+          remoteStreams={voiceChat.remoteStreams}
+          micEnabled={voiceChat.micEnabled}
+          cameraEnabled={voiceChat.cameraEnabled}
+          onToggleMic={voiceChat.toggleMic}
+          onToggleCamera={voiceChat.toggleCamera}
         />
 
         {isEditModalOpen && (
