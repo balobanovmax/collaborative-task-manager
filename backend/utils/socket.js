@@ -53,3 +53,17 @@ export const emitChatCleared = (groupId) => {
     emitToGroup(groupId, 'chat-cleared', { groupId });
 };
 
+export const emitToUser = (userId, event, data) => {
+    if (io) {
+        io.to(`user-${userId}`).emit(event, data);
+    }
+};
+
+export const emitNotification = (userId, notification) => {
+    emitToUser(userId, 'notification-received', { notification });
+};
+
+export const emitJoinRequestUpdated = (groupId, request, action) => {
+    emitToGroup(groupId, 'join-request-updated', { request, action });
+};
+

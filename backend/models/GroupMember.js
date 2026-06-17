@@ -1,6 +1,8 @@
 import pool from '../config/database.js';
 
-export const addUserToGroup = async (userId, groupId, password = null) => {
+export const addUserToGroup = async (userId, groupId, password = null, options = {}) => {
+    const { skipPasswordCheck = false } = options;
+
     try {
         if (!userId || typeof userId !== 'number' || userId <= 0) {
             throw new Error('Valid user ID is required');
@@ -28,9 +30,11 @@ export const addUserToGroup = async (userId, groupId, password = null) => {
         }
 
         const { verifyGroupPassword } = await import('./Group.js');
-        const canJoin = await verifyGroupPassword(groupId, password);
-        if (!canJoin) {
-            throw new Error('Access denied - incorrect password or private group');
+        if (!skipPasswordCheck) {
+            const canJoin = await verifyGroupPassword(groupId, password);
+            if (!canJoin) {
+                throw new Error('Access denied - incorrect password or private group');
+            }
         }
 
         const query = `

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from './Navbar.module.css';
 import UserAvatar from './UserAvatar';
+import NotificationsPanel from './NotificationsPanel';
 import { isAuthenticated, logout, getUser } from '../../utils/auth';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -56,6 +57,7 @@ function Navbar() {
           </button>
           {loggedIn ? (
             <>
+              <NotificationsPanel />
               <Link to="/settings" className={styles.btnSecondary}>
                 Settings
               </Link>

@@ -14,6 +14,7 @@ import groupRoutes from './routes/groups.js';
 import userRoutes from './routes/users.js';
 import taskRoutes from './routes/tasks.js';
 import messageRoutes from './routes/messages.js';
+import notificationRoutes from './routes/notifications.js';
 import { setSocketIO } from './utils/socket.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -45,6 +46,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World');
@@ -69,6 +71,20 @@ app.get('/api/db', async (req, res) => {
 
 io.on('connection', (socket) => {
     console.log('Client connected:', socket.id);
+
+    socket.on('join-user', (userId) => {
+        if (userId) {
+            socket.join(`user-${userId}`);
+            console.log(`Socket ${socket.id} joined user-${userId}`);
+        }
+    });
+
+    socket.on('leave-user', (userId) => {
+        if (userId) {
+            socket.leave(`user-${userId}`);
+            console.log(`Socket ${socket.id} left user-${userId}`);
+        }
+    });
 
     socket.on('join-group', (groupId) => {
         socket.join(`group-${groupId}`);

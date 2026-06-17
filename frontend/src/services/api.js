@@ -124,6 +124,48 @@ export const groupAPI = {
 
     const response = await api.put(`/groups/${groupId}`, payload);
     return response.data;
+  },
+
+  getJoinPreview: async (groupId) => {
+    const response = await api.get(`/groups/${groupId}/join-preview`);
+    return response.data;
+  },
+
+  submitJoinRequest: async (groupId, message = null) => {
+    const response = await api.post(`/groups/${groupId}/join-requests`, { message });
+    return response.data;
+  },
+
+  getJoinRequests: async (groupId) => {
+    const response = await api.get(`/groups/${groupId}/join-requests`);
+    return response.data;
+  },
+
+  reviewJoinRequest: async (groupId, requestId, action) => {
+    const response = await api.patch(`/groups/${groupId}/join-requests/${requestId}`, { action });
+    return response.data;
+  }
+};
+
+export const notificationAPI = {
+  getNotifications: async (limit = 50) => {
+    const response = await api.get(`/notifications?limit=${limit}`);
+    return response.data;
+  },
+
+  getUnreadCount: async () => {
+    const response = await api.get('/notifications/unread-count');
+    return response.data;
+  },
+
+  markRead: async (notificationId) => {
+    const response = await api.patch(`/notifications/${notificationId}/read`);
+    return response.data;
+  },
+
+  markAllRead: async () => {
+    const response = await api.patch('/notifications/read-all');
+    return response.data;
   }
 };
 

@@ -112,7 +112,7 @@ export const findGroupById = async (groupId) => {
     }
 };
 
-const findGroupByIdWithPassword = async (groupId) => {
+export const findGroupByIdWithPassword = async (groupId) => {
     try {
         if (!groupId || typeof groupId !== 'number') {
             throw new Error('Valid group ID is required');
@@ -228,9 +228,9 @@ export const verifyGroupPassword = async (groupId, plainPassword) => {
             return true;
         }
         
-        // If private group has no join password, allow joining
+        // If private group has no join password, require owner approval
         if (!group.join_password_hash) {
-            return true;
+            throw new Error('This private group requires owner approval to join.');
         }
         
         // If password is required but not provided

@@ -20,17 +20,11 @@ function CreateGroupForm() {
     setIsLoading(true);
 
     try {
-      if (!isPublic && !password.trim()) {
-        setErrorMessage('Password is required for private groups');
-        setIsLoading(false);
-        return;
-      }
-
       await groupAPI.createGroup(
         groupName.trim(),
         description.trim() || null,
         isPublic,
-        !isPublic ? password : null
+        !isPublic && password.trim() ? password : null
       );
       
       navigate('/my-groups', { 
@@ -114,25 +108,24 @@ function CreateGroupForm() {
                 onChange={() => setIsPublic(false)}
                 disabled={isLoading}
               />
-              <span>Private (requires password)</span>
+              <span>Private (password or owner approval)</span>
             </label>
           </div>
         </div>
 
         {!isPublic && (
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Password</label>
+            <label className={styles.formLabel}>Password (optional)</label>
             <input
               type="password"
               className={styles.formInput}
-              placeholder="Enter group password"
+              placeholder="Leave blank for request-to-join"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required={!isPublic}
               disabled={isLoading}
             />
             <p className={styles.helperText}>
-              Members will need this password to join
+              Set a password for instant join, or leave blank so members must request access
             </p>
           </div>
         )}

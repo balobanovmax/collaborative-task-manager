@@ -182,6 +182,133 @@
   border: 1px solid var(--border);
 }
 
+.joinRequestsSection {
+  background-color: var(--bg-surface);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.joinRequestsSectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.joinRequestsSectionHeader:hover {
+  color: var(--primary);
+}
+
+.joinRequestsBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 8px;
+  border-radius: 10px;
+  background-color: var(--danger);
+  color: var(--text-inverse);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.joinRequestsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.joinRequestsEmpty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.joinRequestCard {
+  padding: 12px;
+  background-color: var(--bg-page);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.joinRequestHeader {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.joinRequestInfo {
+  min-width: 0;
+}
+
+.joinRequestName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.joinRequestMessage {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-subtle);
+  line-height: 1.4;
+}
+
+.joinRequestActions {
+  display: flex;
+  gap: 8px;
+}
+
+.approveButton,
+.rejectButton {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+}
+
+.approveButton {
+  background-color: var(--primary);
+  color: var(--text-inverse);
+}
+
+.approveButton:hover:not(:disabled) {
+  background-color: var(--primary-hover);
+}
+
+.rejectButton {
+  background-color: var(--bg-muted);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.rejectButton:hover:not(:disabled) {
+  background-color: var(--bg-hover);
+}
+
+.approveButton:disabled,
+.rejectButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .membersSectionHeader {
   display: flex;
   justify-content: space-between;

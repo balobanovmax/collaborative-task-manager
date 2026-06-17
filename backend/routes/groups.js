@@ -2,7 +2,19 @@ import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { createGroup, findGroupById, deleteGroup, updateGroup } from '../models/Group.js';
 import { getMemberCount, addUserToGroup, getGroupMembers, removeUserFromGroup, isUserMember } from '../models/GroupMember.js';
-import { emitMemberJoined, emitMemberRemoved, emitGroupUpdated } from '../utils/socket.js';
+import {
+    getJoinPreview,
+    createJoinRequest,
+    getPendingJoinRequestsForGroup,
+    reviewJoinRequest
+} from '../models/GroupJoinRequest.js';
+import {
+    emitMemberJoined,
+    emitMemberRemoved,
+    emitGroupUpdated,
+    emitNotification,
+    emitJoinRequestUpdated
+} from '../utils/socket.js';
 
 const router = express.Router();
 
@@ -33,7 +45,7 @@ router.post('/', requireAuth, async (req, res) => {
         
         // Automatically add the group creator as a member
         // Pass the password so creator can join their own private group
-        await addUserToGroup(ownerId, newGroup.id, join_password);
+        await addUserToGroup(ownerId, newGroup.id, join_password, { skipPasswordCheck: true });
         
         // Send success response
         res.status(201).json({
@@ -49,6 +61,160 @@ router.post('/', requireAuth, async (req, res) => {
         
         // Send appropriate error response
         res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.get('/:id/join-preview', requireAuth, async (req, res) => {
+    try {
+        const groupId = parseInt(req.params.id);
+
+        if (isNaN(groupId) || groupId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid group ID. Must be a positive number.'
+            });
+        }
+
+        const preview = await getJoinPreview(groupId, req.userId);
+
+        res.json({
+            success: true,
+            data: { preview }
+        });
+    } catch (error) {
+        console.error('Error fetching join preview:', error);
+
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.post('/:id/join-requests', requireAuth, async (req, res) => {
+    try {
+        const groupId = parseInt(req.params.id);
+
+        if (isNaN(groupId) || groupId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid group ID. Must be a positive number.'
+            });
+        }
+
+        const { message } = req.body;
+        const result = await createJoinRequest(groupId, req.userId, message);
+
+        emitNotification(result.notification.user_id, result.notification);
+
+        res.status(201).json({
+            success: true,
+            message: 'Join request submitted. The group owner will be notified.',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error creating join request:', error);
+
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('already')) {
+            statusCode = 409;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.get('/:id/join-requests', requireAuth, async (req, res) => {
+    try {
+        const groupId = parseInt(req.params.id);
+
+        if (isNaN(groupId) || groupId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid group ID. Must be a positive number.'
+            });
+        }
+
+        const requests = await getPendingJoinRequestsForGroup(groupId, req.userId);
+
+        res.json({
+            success: true,
+            data: { requests }
+        });
+    } catch (error) {
+        console.error('Error fetching join requests:', error);
+
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('Only the group owner')) {
+            statusCode = 403;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.patch('/:id/join-requests/:requestId', requireAuth, async (req, res) => {
+    try {
+        const groupId = parseInt(req.params.id);
+        const requestId = parseInt(req.params.requestId);
+
+        if (isNaN(groupId) || groupId <= 0 || isNaN(requestId) || requestId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid group ID or request ID.'
+            });
+        }
+
+        const { action } = req.body;
+        const result = await reviewJoinRequest(requestId, req.userId, action);
+
+        if (result.notification) {
+            emitNotification(result.notification.user_id, result.notification);
+        }
+        emitJoinRequestUpdated(groupId, result.request, result.action);
+
+        if (result.action === 'approved' && result.member) {
+            emitMemberJoined(groupId, result.member);
+        }
+
+        res.json({
+            success: true,
+            message: result.action === 'approved'
+                ? 'Join request approved'
+                : 'Join request rejected',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error reviewing join request:', error);
+
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('Only the group owner')) {
+            statusCode = 403;
+        } else if (error.message.includes('already been reviewed')) {
+            statusCode = 409;
+        }
+
+        res.status(statusCode).json({
             success: false,
             message: error.message
         });
@@ -193,8 +359,9 @@ router.post('/:id/join', requireAuth, async (req, res) => {
             statusCode = 404; // Not Found
         } else if (error.message.includes('already a member')) {
             statusCode = 409; // Conflict
-        } else if (error.message.includes('Password is required') || 
-                   error.message.includes('Incorrect group password')) {
+        } else         if (error.message.includes('Password is required') || 
+                   error.message.includes('Incorrect group password') ||
+                   error.message.includes('requires owner approval')) {
             statusCode = 403; // Forbidden
         }
         

@@ -21,7 +21,8 @@ import {
   onMemberRemoved,
   onMessageSent,
   onChatCleared,
-  onGroupUpdated
+  onGroupUpdated,
+  onJoinRequestUpdated
 } from '../services/socket';
 
 const getTaskAssignee = (task) => {
@@ -68,10 +69,14 @@ function GroupView() {
   const [isEditing, setIsEditing] = useState(false);
   const [assigneeFilter, setAssigneeFilter] = useState('all');
   const [selectedMember, setSelectedMember] = useState(null);
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [isJoinRequestsExpanded, setIsJoinRequestsExpanded] = useState(true);
+  const [reviewingRequestId, setReviewingRequestId] = useState(null);
 
   useEffect(() => {
     setAssigneeFilter('all');
     setSelectedMember(null);
+    setJoinRequests([]);
   }, [groupId]);
 
   const filteredTasks = tasks.filter((task) => {
@@ -108,6 +113,19 @@ function GroupView() {
       setGroup(groupResponse.data.group);
       setMembers(membersResponse.data.members);
       setTasks(tasksResponse.data.tasks || []);
+
+      const loadedGroup = groupResponse.data.group;
+      if (loadedGroup && Number(currentUser?.id) === Number(loadedGroup.owner_id)) {
+        try {
+          const requestsResponse = await groupAPI.getJoinRequests(parseInt(groupId));
+          setJoinRequests(requestsResponse.data.requests || []);
+        } catch {
+          setJoinRequests([]);
+        }
+      } else {
+        setJoinRequests([]);
+      }
+
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
@@ -124,7 +142,7 @@ function GroupView() {
         setErrorMessage('Failed to load group. Please try again.');
       }
     }
-  }, [groupId, navigate]);
+  }, [groupId, navigate, currentUser?.id]);
 
   useEffect(() => {
     fetchGroupData();
@@ -248,6 +266,16 @@ function GroupView() {
           fetchGroupData(false);
         }
       }));
+
+      unsubscribers.push(onJoinRequestUpdated((data) => {
+        if (!mounted || Number(data.request.group_id) !== groupIdInt) {
+          return;
+        }
+
+        if (data.action === 'approved' || data.action === 'rejected') {
+          setJoinRequests((prev) => prev.filter((request) => request.id !== data.request.id));
+        }
+      }));
     };
 
     setupSocket();
@@ -274,6 +302,27 @@ function GroupView() {
 
   const handleRemoveMember = (memberId, memberName) => {
     setConfirmModal({ isOpen: true, memberId, memberName });
+  };
+
+  const handleReviewJoinRequest = async (requestId, action) => {
+    setReviewingRequestId(requestId);
+    setErrorMessage('');
+
+    try {
+      await groupAPI.reviewJoinRequest(parseInt(groupId), requestId, action);
+      setJoinRequests((prev) => prev.filter((request) => request.id !== requestId));
+      setSuccessMessage(action === 'approve' ? 'Join request approved' : 'Join request declined');
+      fetchGroupData(false);
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      if (error.response?.data?.message) {
+        setErrorMessage(error.response.data.message);
+      } else {
+        setErrorMessage('Failed to review join request. Please try again.');
+      }
+    } finally {
+      setReviewingRequestId(null);
+    }
   };
 
   const confirmRemoveMember = async () => {
@@ -350,13 +399,6 @@ function GroupView() {
     e.preventDefault();
     if (!editName.trim()) return;
 
-    const wasPublic = group?.is_public ?? true;
-
-    if (!editIsPublic && wasPublic && !editPassword.trim()) {
-      setEditError('Password is required when making a group private');
-      return;
-    }
-    
     try {
       setIsEditing(true);
       setEditError('');
@@ -469,6 +511,67 @@ function GroupView() {
 
         <div className={styles.content}>
           <div className={styles.sidebar}>
+            {currentUser?.id === group?.owner_id && (
+              <div className={styles.joinRequestsSection}>
+                <button
+                  className={styles.joinRequestsSectionHeader}
+                  onClick={() => setIsJoinRequestsExpanded(!isJoinRequestsExpanded)}
+                >
+                  <span>
+                    Join Requests
+                    {joinRequests.length > 0 && (
+                      <span className={styles.joinRequestsBadge}>{joinRequests.length}</span>
+                    )}
+                  </span>
+                  <span className={`${styles.expandArrow} ${isJoinRequestsExpanded ? styles.expanded : ''}`}>
+                    ▼
+                  </span>
+                </button>
+                {isJoinRequestsExpanded && (
+                  <div className={styles.joinRequestsList}>
+                    {joinRequests.length === 0 ? (
+                      <p className={styles.joinRequestsEmpty}>No pending requests</p>
+                    ) : (
+                      joinRequests.map((request) => (
+                        <div key={request.id} className={styles.joinRequestCard}>
+                          <div className={styles.joinRequestHeader}>
+                            <UserAvatar
+                              username={request.username}
+                              profilePictureUrl={request.profile_picture_url}
+                              size="sm"
+                            />
+                            <div className={styles.joinRequestInfo}>
+                              <span className={styles.joinRequestName}>{request.username}</span>
+                              {request.message && (
+                                <p className={styles.joinRequestMessage}>{request.message}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className={styles.joinRequestActions}>
+                            <button
+                              type="button"
+                              className={styles.approveButton}
+                              onClick={() => handleReviewJoinRequest(request.id, 'approve')}
+                              disabled={reviewingRequestId === request.id}
+                            >
+                              Approve
+                            </button>
+                            <button
+                              type="button"
+                              className={styles.rejectButton}
+                              onClick={() => handleReviewJoinRequest(request.id, 'reject')}
+                              disabled={reviewingRequestId === request.id}
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <div className={styles.membersSection}>
               <button 
                 className={styles.membersSectionHeader}
@@ -753,8 +856,8 @@ function GroupView() {
                     />
                     <p className={styles.helperText}>
                       {group?.is_public
-                        ? 'Members will need this password to join'
-                        : 'Enter a new password only if you want to change it'}
+                        ? 'Set a password for instant join, or leave blank for request-to-join'
+                        : 'Enter a new password to change it, or leave blank to keep current settings'}
                     </p>
                   </div>
                 )}

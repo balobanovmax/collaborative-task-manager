@@ -102,6 +102,18 @@ export const getSocket = () => {
     return socket;
 };
 
+export const joinUser = (userId) => {
+    if (socket && userId) {
+        socket.emit('join-user', userId);
+    }
+};
+
+export const leaveUser = (userId) => {
+    if (socket && userId) {
+        socket.emit('leave-user', userId);
+    }
+};
+
 export const joinGroup = (groupId) => {
     if (socket) {
         socket.emit('join-group', groupId);
@@ -124,6 +136,8 @@ export const onMemberRemoved = (callback) => subscribe('member-removed', callbac
 export const onGroupUpdated = (callback) => subscribe('group-updated', callback);
 export const onMessageSent = (callback) => subscribe('message-sent', callback);
 export const onChatCleared = (callback) => subscribe('chat-cleared', callback);
+export const onNotificationReceived = (callback) => subscribe('notification-received', callback);
+export const onJoinRequestUpdated = (callback) => subscribe('join-request-updated', callback);
 
 export const removeAllListeners = () => {
     Object.values(subscribers).forEach((callbackSet) => {

@@ -77,6 +77,38 @@
   margin-bottom: 0;
 }
 
+.previewBox {
+  background-color: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.previewText {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.formTextarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.formTextarea:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
 .buttonGroup {
   display: flex;
   gap: 16px;
