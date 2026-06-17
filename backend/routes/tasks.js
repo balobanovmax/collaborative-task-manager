@@ -7,9 +7,17 @@ import {
     updateTask, 
     deleteTask, 
     toggleTaskCompletion,
-    updateTaskStatus
+    updateTaskStatus,
+    getTasksAssignedToUser
 } from '../models/Task.js';
 import { createTaskComment, getCommentsByTask } from '../models/TaskComment.js';
+import {
+    getSubtasksByTask,
+    createSubtask,
+    updateSubtask,
+    deleteSubtask
+} from '../models/TaskSubtask.js';
+import { getActivityByTask, logTaskActivity } from '../models/TaskActivity.js';
 import {
     createTaskAttachment,
     getAttachmentsByTask,
@@ -40,7 +48,7 @@ const router = express.Router();
 
 router.post('/', requireAuth, async (req, res) => {
     try {
-        const { group_id, title, description, due_date, assigned_to } = req.body;
+        const { group_id, title, description, due_date, assigned_to, priority } = req.body;
         const createdBy = req.userId;
 
         // Validate required fields
@@ -51,7 +59,7 @@ router.post('/', requireAuth, async (req, res) => {
             });
         }
 
-        const newTask = await createTask(group_id, createdBy, title, description, due_date, assigned_to);
+        const newTask = await createTask(group_id, createdBy, title, description, due_date, assigned_to, priority);
 
         emitTaskCreated(group_id, newTask);
 
@@ -78,6 +86,190 @@ router.post('/', requireAuth, async (req, res) => {
             success: false,
             message: error.message
         });
+    }
+});
+
+router.get('/my-tasks', requireAuth, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const includeDone = req.query.includeDone === 'true';
+        const sortBy = req.query.sortBy || 'due_date';
+        const sortOrder = req.query.sortOrder || 'ASC';
+
+        const result = await getTasksAssignedToUser(userId, {
+            includeDone,
+            sortBy,
+            sortOrder,
+            status: req.query.status || null,
+            priority: req.query.priority || null,
+            search: req.query.search || null,
+            dueFrom: req.query.dueFrom || null,
+            dueTo: req.query.dueTo || null,
+            overdueOnly: req.query.overdueOnly === 'true'
+        });
+
+        res.json({
+            success: true,
+            data: result
+        });
+    } catch (error) {
+        console.error('Error fetching my tasks:', error);
+
+        res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.get('/:id/subtasks', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id, 10);
+        const userId = req.userId;
+
+        if (isNaN(taskId) || taskId <= 0) {
+            return res.status(400).json({ success: false, message: 'Invalid task ID.' });
+        }
+
+        const subtasks = await getSubtasksByTask(taskId, userId);
+
+        res.json({
+            success: true,
+            data: { subtasks }
+        });
+    } catch (error) {
+        console.error('Error fetching subtasks:', error);
+        let statusCode = 400;
+        if (error.message.includes('not found')) statusCode = 404;
+        if (error.message.includes('member')) statusCode = 403;
+        res.status(statusCode).json({ success: false, message: error.message });
+    }
+});
+
+router.post('/:id/subtasks', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id, 10);
+        const userId = req.userId;
+        const { title } = req.body;
+
+        if (isNaN(taskId) || taskId <= 0) {
+            return res.status(400).json({ success: false, message: 'Invalid task ID.' });
+        }
+
+        const subtask = await createSubtask(taskId, userId, title);
+        const task = await findTaskById(taskId);
+
+        await logTaskActivity(taskId, userId, 'subtask_added', `Added checklist item "${subtask.title}"`);
+
+        emitTaskUpdated(task.group_id, task);
+
+        res.status(201).json({
+            success: true,
+            message: 'Subtask created successfully',
+            data: { subtask, task }
+        });
+    } catch (error) {
+        console.error('Error creating subtask:', error);
+        let statusCode = 400;
+        if (error.message.includes('not found')) statusCode = 404;
+        if (error.message.includes('member')) statusCode = 403;
+        res.status(statusCode).json({ success: false, message: error.message });
+    }
+});
+
+router.patch('/:id/subtasks/:subtaskId', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id, 10);
+        const subtaskId = parseInt(req.params.subtaskId, 10);
+        const userId = req.userId;
+        const { title, is_completed } = req.body;
+
+        if (isNaN(taskId) || taskId <= 0 || isNaN(subtaskId) || subtaskId <= 0) {
+            return res.status(400).json({ success: false, message: 'Invalid task or subtask ID.' });
+        }
+
+        const result = await updateSubtask(taskId, subtaskId, userId, { title, is_completed });
+        const task = await findTaskById(taskId);
+
+        if (is_completed !== undefined && result.previous.is_completed !== result.subtask.is_completed) {
+            const action = result.subtask.is_completed ? 'subtask_completed' : 'subtask_reopened';
+            const detail = result.subtask.is_completed
+                ? `Completed checklist item "${result.subtask.title}"`
+                : `Reopened checklist item "${result.subtask.title}"`;
+            await logTaskActivity(taskId, userId, action, detail);
+        } else if (title !== undefined && result.previous.title !== result.subtask.title) {
+            await logTaskActivity(taskId, userId, 'subtask_updated', `Renamed checklist item to "${result.subtask.title}"`);
+        }
+
+        emitTaskUpdated(task.group_id, task);
+
+        res.json({
+            success: true,
+            message: 'Subtask updated successfully',
+            data: { subtask: result.subtask, task }
+        });
+    } catch (error) {
+        console.error('Error updating subtask:', error);
+        let statusCode = 400;
+        if (error.message.includes('not found')) statusCode = 404;
+        if (error.message.includes('member')) statusCode = 403;
+        res.status(statusCode).json({ success: false, message: error.message });
+    }
+});
+
+router.delete('/:id/subtasks/:subtaskId', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id, 10);
+        const subtaskId = parseInt(req.params.subtaskId, 10);
+        const userId = req.userId;
+
+        if (isNaN(taskId) || taskId <= 0 || isNaN(subtaskId) || subtaskId <= 0) {
+            return res.status(400).json({ success: false, message: 'Invalid task or subtask ID.' });
+        }
+
+        const deleted = await deleteSubtask(taskId, subtaskId, userId);
+        const task = await findTaskById(taskId);
+
+        await logTaskActivity(taskId, userId, 'subtask_removed', `Removed checklist item "${deleted.title}"`);
+
+        emitTaskUpdated(task.group_id, task);
+
+        res.json({
+            success: true,
+            message: 'Subtask deleted successfully',
+            data: { task }
+        });
+    } catch (error) {
+        console.error('Error deleting subtask:', error);
+        let statusCode = 400;
+        if (error.message.includes('not found')) statusCode = 404;
+        if (error.message.includes('member')) statusCode = 403;
+        res.status(statusCode).json({ success: false, message: error.message });
+    }
+});
+
+router.get('/:id/activity', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id, 10);
+        const userId = req.userId;
+        const limit = parseInt(req.query.limit, 10) || 50;
+
+        if (isNaN(taskId) || taskId <= 0) {
+            return res.status(400).json({ success: false, message: 'Invalid task ID.' });
+        }
+
+        const activity = await getActivityByTask(taskId, userId, limit);
+
+        res.json({
+            success: true,
+            data: { activity }
+        });
+    } catch (error) {
+        console.error('Error fetching task activity:', error);
+        let statusCode = 400;
+        if (error.message.includes('not found')) statusCode = 404;
+        if (error.message.includes('member')) statusCode = 403;
+        res.status(statusCode).json({ success: false, message: error.message });
     }
 });
 
@@ -460,7 +652,7 @@ router.put('/:id', requireAuth, async (req, res) => {
     try {
         const taskId = parseInt(req.params.id);
         const userId = req.userId;
-        const { title, description, due_date, assigned_to } = req.body;
+        const { title, description, due_date, assigned_to, priority } = req.body;
 
         // Validate task ID
         if (isNaN(taskId) || taskId <= 0) {
@@ -475,6 +667,7 @@ router.put('/:id', requireAuth, async (req, res) => {
         if (description !== undefined) updateData.description = description;
         if (due_date !== undefined) updateData.due_date = due_date;
         if (assigned_to !== undefined) updateData.assigned_to = assigned_to;
+        if (priority !== undefined) updateData.priority = priority;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({
@@ -579,7 +772,19 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
             });
         }
 
-        const { completed, sortBy, sortOrder, assignedTo, unassigned } = req.query;
+        const {
+            completed,
+            sortBy,
+            sortOrder,
+            assignedTo,
+            unassigned,
+            status,
+            priority,
+            search,
+            dueFrom,
+            dueTo,
+            overdueOnly
+        } = req.query;
         
         const options = {};
         
@@ -587,6 +792,30 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
             options.completedOnly = true;
         } else if (completed === 'false') {
             options.pendingOnly = true;
+        }
+
+        if (status && ['todo', 'doing', 'done'].includes(status)) {
+            options.status = status;
+        }
+
+        if (priority && ['low', 'medium', 'high', 'urgent'].includes(priority)) {
+            options.priority = priority;
+        }
+
+        if (search) {
+            options.search = search;
+        }
+
+        if (dueFrom) {
+            options.dueFrom = dueFrom;
+        }
+
+        if (dueTo) {
+            options.dueTo = dueTo;
+        }
+
+        if (overdueOnly === 'true') {
+            options.overdueOnly = true;
         }
 
         if (unassigned === 'true') {

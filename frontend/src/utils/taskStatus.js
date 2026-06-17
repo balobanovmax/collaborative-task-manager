@@ -21,3 +21,27 @@ export const getNextStatus = (currentStatus) => {
 };
 
 export const getStatusLabel = (status) => STATUS_LABELS[status] || STATUS_LABELS.todo;
+
+export const isTaskOverdue = (task) => {
+  const status = getTaskStatus(task);
+  if (status === 'done' || !task?.due_date) {
+    return false;
+  }
+
+  const due = new Date(task.due_date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  due.setHours(0, 0, 0, 0);
+  return due < today;
+};
+
+export const isTaskDueToday = (task) => {
+  const status = getTaskStatus(task);
+  if (status === 'done' || !task?.due_date) {
+    return false;
+  }
+
+  const due = new Date(task.due_date);
+  const today = new Date();
+  return due.toDateString() === today.toDateString();
+};

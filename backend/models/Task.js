@@ -1,6 +1,24 @@
 import pool from '../config/database.js';
+import { logTaskActivity } from './TaskActivity.js';
 
 const TASK_STATUSES = ['todo', 'doing', 'done'];
+const TASK_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
+
+const PRIORITY_ORDER_SQL = `CASE t.priority
+    WHEN 'urgent' THEN 1
+    WHEN 'high' THEN 2
+    WHEN 'medium' THEN 3
+    WHEN 'low' THEN 4
+    ELSE 5
+END`;
+
+const TASK_COUNT_FIELDS = `
+    (SELECT COUNT(*)::int FROM task_comments tc WHERE tc.task_id = t.id) AS comment_count,
+    (SELECT COUNT(*)::int FROM task_attachments ta WHERE ta.task_id = t.id) AS attachment_count,
+    (SELECT COUNT(*)::int FROM task_drawings td WHERE td.task_id = t.id) AS drawing_count,
+    (SELECT COUNT(*)::int FROM task_subtasks ts WHERE ts.task_id = t.id) AS subtask_count,
+    (SELECT COUNT(*)::int FROM task_subtasks ts WHERE ts.task_id = t.id AND ts.is_completed = TRUE) AS subtask_completed_count
+`;
 
 const TASK_SELECT_FIELDS = `
     t.id,
@@ -15,6 +33,7 @@ const TASK_SELECT_FIELDS = `
     t.completed_at,
     t.completed_by,
     t.assigned_to,
+    t.priority,
     u_creator.username as creator_username,
     u_creator.email as creator_email,
     u_completer.username as completer_username,
@@ -37,6 +56,7 @@ const formatTaskFromRow = (task, extra = {}) => ({
     completed_at: task.completed_at,
     completed_by: task.completed_by,
     assigned_to: task.assigned_to,
+    priority: task.priority || 'medium',
     creator_username: task.creator_username,
     assignee_username: task.assignee_username,
     completer_username: task.completer_username,
@@ -57,7 +77,9 @@ const formatTaskFromRow = (task, extra = {}) => ({
     } : null,
     comment_count: task.comment_count !== undefined ? parseInt(task.comment_count, 10) : 0,
     attachment_count: task.attachment_count !== undefined ? parseInt(task.attachment_count, 10) : 0,
-    drawing_count: task.drawing_count !== undefined ? parseInt(task.drawing_count, 10) : 0
+    drawing_count: task.drawing_count !== undefined ? parseInt(task.drawing_count, 10) : 0,
+    subtask_count: task.subtask_count !== undefined ? parseInt(task.subtask_count, 10) : 0,
+    subtask_completed_count: task.subtask_completed_count !== undefined ? parseInt(task.subtask_completed_count, 10) : 0
 });
 
 export const validateTaskAssignee = async (groupId, assigneeId) => {
@@ -85,6 +107,18 @@ export const validateTaskAssignee = async (groupId, assigneeId) => {
     }
 
     return parsedAssigneeId;
+};
+
+export const validateTaskPriority = (priority) => {
+    if (priority === null || priority === undefined || priority === '') {
+        return 'medium';
+    }
+
+    if (typeof priority !== 'string' || !TASK_PRIORITIES.includes(priority)) {
+        throw new Error(`Invalid priority. Must be one of: ${TASK_PRIORITIES.join(', ')}`);
+    }
+
+    return priority;
 };
 
 export const validateTaskInput = (title, description, dueDate) => {
@@ -148,7 +182,7 @@ export const validateTaskInput = (title, description, dueDate) => {
     };
 };
 
-export const createTask = async (groupId, createdBy, title, description, dueDate, assignedTo = null) => {
+export const createTask = async (groupId, createdBy, title, description, dueDate, assignedTo = null, priority = 'medium') => {
     try {
         // Validate required parameters
         if (!groupId || isNaN(groupId) || groupId <= 0) {
@@ -193,11 +227,12 @@ export const createTask = async (groupId, createdBy, title, description, dueDate
         }
 
         const validatedAssignee = await validateTaskAssignee(groupId, assignedTo);
+        const validatedPriority = validateTaskPriority(priority);
         
         // Insert the new task
         const insertQuery = `
-            INSERT INTO tasks (group_id, title, description, created_by, due_date, assigned_to)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO tasks (group_id, title, description, created_by, due_date, assigned_to, priority)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id
         `;
         
@@ -207,10 +242,24 @@ export const createTask = async (groupId, createdBy, title, description, dueDate
             cleanDescription,
             createdBy,
             cleanDueDate,
-            validatedAssignee
+            validatedAssignee,
+            validatedPriority
         ]);
-        
-        return findTaskById(result.rows[0].id);
+
+        const task = await findTaskById(result.rows[0].id);
+        await logTaskActivity(task.id, createdBy, 'created', `Created task "${cleanTitle}"`);
+
+        if (validatedAssignee) {
+            await logTaskActivity(
+                task.id,
+                createdBy,
+                'assigned',
+                'Assigned task to a team member',
+                { assigned_to: validatedAssignee }
+            );
+        }
+
+        return task;
         
     } catch (error) {
         console.error('Error creating task:', error);
@@ -229,7 +278,8 @@ export const findTaskById = async (taskId) => {
         const query = `
             SELECT 
                 ${TASK_SELECT_FIELDS},
-                g.name as group_name
+                g.name as group_name,
+                ${TASK_COUNT_FIELDS}
             FROM tasks t
             LEFT JOIN users u_creator ON t.created_by = u_creator.id
             LEFT JOIN users u_completer ON t.completed_by = u_completer.id
@@ -272,6 +322,11 @@ export const getTasksByGroup = async (groupId, options = {}) => {
             completedOnly = false,
             pendingOnly = false,
             status = null,
+            priority = null,
+            search = null,
+            dueFrom = null,
+            dueTo = null,
+            overdueOnly = false,
             assignedTo = null,
             unassignedOnly = false,
             sortBy = 'created_at',
@@ -279,7 +334,7 @@ export const getTasksByGroup = async (groupId, options = {}) => {
         } = options;
         
         // Validate sort options
-        const validSortFields = ['created_at', 'due_date', 'title', 'is_completed', 'status'];
+        const validSortFields = ['created_at', 'due_date', 'title', 'is_completed', 'status', 'priority'];
         const validSortOrders = ['ASC', 'DESC'];
         
         if (!validSortFields.includes(sortBy)) {
@@ -302,6 +357,38 @@ export const getTasksByGroup = async (groupId, options = {}) => {
         } else if (pendingOnly && !completedOnly) {
             whereClause += " AND t.status != 'done'";
         }
+
+        if (priority && TASK_PRIORITIES.includes(priority)) {
+            whereClause += ` AND t.priority = $${queryValues.length + 1}`;
+            queryValues.push(priority);
+        }
+
+        if (search && typeof search === 'string' && search.trim()) {
+            whereClause += ` AND (t.title ILIKE $${queryValues.length + 1} OR COALESCE(t.description, '') ILIKE $${queryValues.length + 1})`;
+            queryValues.push(`%${search.trim()}%`);
+        }
+
+        if (overdueOnly) {
+            whereClause += " AND t.status != 'done' AND t.due_date IS NOT NULL AND t.due_date < NOW()";
+        }
+
+        if (dueFrom) {
+            const parsedDueFrom = new Date(dueFrom);
+            if (!isNaN(parsedDueFrom.getTime())) {
+                whereClause += ` AND t.due_date >= $${queryValues.length + 1}`;
+                queryValues.push(parsedDueFrom);
+            }
+        }
+
+        if (dueTo) {
+            const parsedDueTo = new Date(dueTo);
+            if (!isNaN(parsedDueTo.getTime())) {
+                parsedDueTo.setHours(23, 59, 59, 999);
+                whereClause += ` AND t.due_date <= $${queryValues.length + 1}`;
+                queryValues.push(parsedDueTo);
+            }
+        }
+
         if (unassignedOnly) {
             whereClause += ' AND t.assigned_to IS NULL';
         } else if (assignedTo !== null && assignedTo !== undefined) {
@@ -313,14 +400,14 @@ export const getTasksByGroup = async (groupId, options = {}) => {
             whereClause += ` AND t.assigned_to = $${queryValues.length}`;
         }
         
-        const orderClause = `ORDER BY t.${sortBy} ${sortOrder.toUpperCase()}`;
+        const orderClause = sortBy === 'priority'
+            ? `ORDER BY ${PRIORITY_ORDER_SQL} ${sortOrder.toUpperCase()}, t.created_at DESC`
+            : `ORDER BY t.${sortBy} ${sortOrder.toUpperCase()}`;
         
         const query = `
             SELECT 
                 ${TASK_SELECT_FIELDS},
-                (SELECT COUNT(*)::int FROM task_comments tc WHERE tc.task_id = t.id) AS comment_count,
-                (SELECT COUNT(*)::int FROM task_attachments ta WHERE ta.task_id = t.id) AS attachment_count,
-                (SELECT COUNT(*)::int FROM task_drawings td WHERE td.task_id = t.id) AS drawing_count
+                ${TASK_COUNT_FIELDS}
             FROM tasks t
             LEFT JOIN users u_creator ON t.created_by = u_creator.id
             LEFT JOIN users u_completer ON t.completed_by = u_completer.id
@@ -383,12 +470,13 @@ export const updateTask = async (taskId, userId, updateData) => {
             throw new Error('Update data is required and must be an object.');
         }
         
-        const { title, description, due_date, assigned_to } = updateData;
+        const { title, description, due_date, assigned_to, priority } = updateData;
         
         const hasContentUpdate = title !== undefined || description !== undefined || due_date !== undefined;
         const hasAssigneeUpdate = assigned_to !== undefined;
+        const hasPriorityUpdate = priority !== undefined;
 
-        if (!hasContentUpdate && !hasAssigneeUpdate) {
+        if (!hasContentUpdate && !hasAssigneeUpdate && !hasPriorityUpdate) {
             throw new Error('At least one field must be provided for update.');
         }
         
@@ -480,6 +568,11 @@ export const updateTask = async (taskId, userId, updateData) => {
         if (hasAssigneeUpdate) {
             validatedAssignee = await validateTaskAssignee(existingTask.group_id, assigned_to);
         }
+
+        let validatedPriority;
+        if (hasPriorityUpdate) {
+            validatedPriority = validateTaskPriority(priority);
+        }
         
         if (errors.length > 0) {
             throw new Error(errors.join(' '));
@@ -529,6 +622,12 @@ export const updateTask = async (taskId, userId, updateData) => {
             queryValues.push(validatedAssignee);
             paramCounter++;
         }
+
+        if (hasPriorityUpdate) {
+            fieldsToUpdate.push(`priority = $${paramCounter}`);
+            queryValues.push(validatedPriority);
+            paramCounter++;
+        }
         
         queryValues.push(taskId);
         
@@ -540,6 +639,48 @@ export const updateTask = async (taskId, userId, updateData) => {
         `;
         
         await pool.query(updateQuery, queryValues);
+
+        if (title !== undefined && cleanedData.title !== existingTask.title) {
+            await logTaskActivity(taskId, userId, 'title_updated', `Renamed task to "${cleanedData.title}"`, {
+                old_value: existingTask.title,
+                new_value: cleanedData.title
+            });
+        }
+
+        if (description !== undefined && cleanedData.description !== existingTask.description) {
+            await logTaskActivity(taskId, userId, 'description_updated', 'Updated task description');
+        }
+
+        if (due_date !== undefined) {
+            const oldDue = existingTask.due_date ? new Date(existingTask.due_date).toISOString() : null;
+            const newDue = cleanedData.dueDate ? cleanedData.dueDate.toISOString() : null;
+            if (oldDue !== newDue) {
+                await logTaskActivity(taskId, userId, 'due_date_updated', 'Updated due date', {
+                    old_value: oldDue,
+                    new_value: newDue
+                });
+            }
+        }
+
+        if (hasAssigneeUpdate && validatedAssignee !== existingTask.assigned_to) {
+            if (validatedAssignee) {
+                await logTaskActivity(taskId, userId, 'assigned', 'Reassigned task', {
+                    old_assignee_id: existingTask.assigned_to,
+                    new_assignee_id: validatedAssignee
+                });
+            } else {
+                await logTaskActivity(taskId, userId, 'unassigned', 'Removed task assignee', {
+                    old_assignee_id: existingTask.assigned_to
+                });
+            }
+        }
+
+        if (hasPriorityUpdate && validatedPriority !== (existingTask.priority || 'medium')) {
+            await logTaskActivity(taskId, userId, 'priority_updated', `Changed priority to ${validatedPriority}`, {
+                old_value: existingTask.priority || 'medium',
+                new_value: validatedPriority
+            });
+        }
         
         return findTaskById(taskId);
         
@@ -700,6 +841,15 @@ export const updateTaskStatus = async (taskId, userId, nextStatus) => {
             taskId
         ]);
 
+        const previousStatus = task.status || (task.is_completed ? 'done' : 'todo');
+        await logTaskActivity(
+            taskId,
+            userId,
+            'status_changed',
+            `Changed status from ${previousStatus} to ${nextStatus}`,
+            { old_status: previousStatus, new_status: nextStatus }
+        );
+
         const fullTaskResult = await findTaskById(taskId);
 
         return {
@@ -734,6 +884,127 @@ export const toggleTaskCompletion = async (taskId, userId) => {
     }
 };
 
+export const getTasksAssignedToUser = async (userId, options = {}) => {
+    try {
+        if (!userId || isNaN(userId) || userId <= 0) {
+            throw new Error('Invalid user ID. Must be a positive number.');
+        }
 
+        const {
+            includeDone = false,
+            status = null,
+            priority = null,
+            search = null,
+            dueFrom = null,
+            dueTo = null,
+            overdueOnly = false,
+            sortBy = 'due_date',
+            sortOrder = 'ASC'
+        } = options;
 
+        const validSortFields = ['created_at', 'due_date', 'title', 'status', 'priority'];
+        const validSortOrders = ['ASC', 'DESC'];
+
+        if (!validSortFields.includes(sortBy)) {
+            throw new Error(`Invalid sort field. Must be one of: ${validSortFields.join(', ')}`);
+        }
+
+        if (!validSortOrders.includes(sortOrder.toUpperCase())) {
+            throw new Error('Invalid sort order. Must be ASC or DESC.');
+        }
+
+        const queryValues = [userId];
+        let dynamicWhere = `
+            WHERE t.assigned_to = $1
+            AND (
+                g.owner_id = $1
+                OR EXISTS (
+                    SELECT 1 FROM group_members gm
+                    WHERE gm.group_id = t.group_id AND gm.user_id = $1
+                )
+            )
+        `;
+
+        if (!includeDone) {
+            dynamicWhere += " AND t.status != 'done'";
+        }
+
+        if (status && TASK_STATUSES.includes(status)) {
+            dynamicWhere += ` AND t.status = $${queryValues.length + 1}`;
+            queryValues.push(status);
+        }
+
+        if (priority && TASK_PRIORITIES.includes(priority)) {
+            dynamicWhere += ` AND t.priority = $${queryValues.length + 1}`;
+            queryValues.push(priority);
+        }
+
+        if (search && typeof search === 'string' && search.trim()) {
+            dynamicWhere += ` AND (t.title ILIKE $${queryValues.length + 1} OR COALESCE(t.description, '') ILIKE $${queryValues.length + 1})`;
+            queryValues.push(`%${search.trim()}%`);
+        }
+
+        if (overdueOnly) {
+            dynamicWhere += " AND t.status != 'done' AND t.due_date IS NOT NULL AND t.due_date < NOW()";
+        }
+
+        if (dueFrom) {
+            const parsedDueFrom = new Date(dueFrom);
+            if (!isNaN(parsedDueFrom.getTime())) {
+                dynamicWhere += ` AND t.due_date >= $${queryValues.length + 1}`;
+                queryValues.push(parsedDueFrom);
+            }
+        }
+
+        if (dueTo) {
+            const parsedDueTo = new Date(dueTo);
+            if (!isNaN(parsedDueTo.getTime())) {
+                parsedDueTo.setHours(23, 59, 59, 999);
+                dynamicWhere += ` AND t.due_date <= $${queryValues.length + 1}`;
+                queryValues.push(parsedDueTo);
+            }
+        }
+
+        const orderClause = sortBy === 'priority'
+            ? `ORDER BY ${PRIORITY_ORDER_SQL} ${sortOrder.toUpperCase()}, t.due_date ASC NULLS LAST`
+            : sortBy === 'due_date'
+                ? `ORDER BY t.due_date ${sortOrder.toUpperCase()} NULLS LAST, ${PRIORITY_ORDER_SQL} ASC, t.created_at DESC`
+                : `ORDER BY t.${sortBy} ${sortOrder.toUpperCase()}, t.due_date ASC NULLS LAST`;
+
+        const query = `
+            SELECT
+                ${TASK_SELECT_FIELDS},
+                g.name AS group_name,
+                ${TASK_COUNT_FIELDS}
+            FROM tasks t
+            JOIN groups g ON t.group_id = g.id
+            LEFT JOIN users u_creator ON t.created_by = u_creator.id
+            LEFT JOIN users u_completer ON t.completed_by = u_completer.id
+            LEFT JOIN users u_assignee ON t.assigned_to = u_assignee.id
+            ${dynamicWhere}
+            ${orderClause}
+        `;
+
+        const result = await pool.query(query, queryValues);
+        const tasks = result.rows.map((task) => formatTaskFromRow(task));
+
+        const now = new Date();
+        const overdueTasks = tasks.filter((task) =>
+            task.status !== 'done'
+            && task.due_date
+            && new Date(task.due_date) < now
+        ).length;
+
+        return {
+            summary: {
+                total_tasks: tasks.length,
+                overdue_tasks: overdueTasks
+            },
+            tasks
+        };
+    } catch (error) {
+        console.error('Error getting tasks assigned to user:', error);
+        throw error;
+    }
+};
 

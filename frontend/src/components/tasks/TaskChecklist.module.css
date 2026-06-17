@@ -1,0 +1,144 @@
+.checklist {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.toggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-subtle);
+  font-family: inherit;
+  text-align: left;
+}
+
+.toggleButton:hover {
+  color: var(--primary);
+}
+
+.expandArrow {
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+
+.expandArrow.expanded {
+  transform: rotate(180deg);
+}
+
+.body {
+  margin-top: 12px;
+}
+
+.statusText {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.itemList {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.itemLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.itemTitle {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.itemTitleDone {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.deleteButton {
+  background: none;
+  border: none;
+  color: var(--text-subtle);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.deleteButton:hover:not(:disabled) {
+  color: var(--danger-hover);
+}
+
+.deleteButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.addForm {
+  display: flex;
+  gap: 8px;
+}
+
+.addInput {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.addButton {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 4px;
+  background: var(--primary);
+  color: var(--text-inverse);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.addButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: var(--danger-bg);
+  color: var(--danger-hover);
+  border-radius: 4px;
+  font-size: 12px;
+}

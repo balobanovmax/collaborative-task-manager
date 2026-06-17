@@ -7,30 +7,30 @@
 .headerRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-}
-
-.toggleButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: none;
-  border: none;
-  padding: 0;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-subtle);
-  font-family: inherit;
 }
 
-.toggleButton:hover {
+.headerRow:hover .toggleLabel {
   color: var(--primary);
 }
 
+.toggleLabel {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.headerActions {
+  flex-shrink: 0;
+}
+
 .expandArrow {
+  flex-shrink: 0;
   font-size: 11px;
   transition: transform 0.2s;
 }

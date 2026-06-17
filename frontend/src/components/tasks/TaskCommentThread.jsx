@@ -4,8 +4,13 @@ import { taskAPI } from '../../services/api';
 import { onTaskCommentCreated } from '../../services/socket';
 import { getUser } from '../../utils/auth';
 import UserAvatar from '../common/UserAvatar';
+import {
+  renderMessageWithMentions,
+  getMentionQueryAtCursor,
+  insertMention
+} from '../../utils/renderMentions';
 
-function TaskCommentThread({ taskId, groupId, initialCount = 0, onCommentAdded }) {
+function TaskCommentThread({ taskId, groupId, members = [], initialCount = 0, onCommentAdded }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [comments, setComments] = useState([]);
   const [commentCount, setCommentCount] = useState(initialCount);
@@ -13,8 +18,17 @@ function TaskCommentThread({ taskId, groupId, initialCount = 0, onCommentAdded }
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [mentionQuery, setMentionQuery] = useState(null);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const currentUser = getUser();
   const hasLoadedRef = useRef(false);
+  const inputRef = useRef(null);
+
+  const mentionSuggestions = mentionQuery === null
+    ? []
+    : members.filter((member) =>
+        member.username.toLowerCase().startsWith(mentionQuery.toLowerCase())
+      );
 
   useEffect(() => {
     setCommentCount(initialCount);
@@ -68,6 +82,53 @@ function TaskCommentThread({ taskId, groupId, initialCount = 0, onCommentAdded }
     }
   };
 
+  const applyMention = (username) => {
+    const input = inputRef.current;
+    const cursorPosition = input?.selectionStart ?? newComment.length;
+    const { nextValue, nextCursor } = insertMention(newComment, cursorPosition, username);
+    setNewComment(nextValue);
+    setMentionQuery(null);
+    setActiveSuggestionIndex(0);
+
+    requestAnimationFrame(() => {
+      if (input) {
+        input.focus();
+        input.setSelectionRange(nextCursor, nextCursor);
+      }
+    });
+  };
+
+  const handleCommentChange = (event) => {
+    const { value } = event.target;
+    setNewComment(value);
+    const query = getMentionQueryAtCursor(value, event.target.selectionStart);
+    setMentionQuery(query);
+    setActiveSuggestionIndex(0);
+  };
+
+  const handleCommentKeyDown = (event) => {
+    if (!mentionSuggestions.length) {
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setActiveSuggestionIndex((prev) =>
+        prev + 1 >= mentionSuggestions.length ? 0 : prev + 1
+      );
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveSuggestionIndex((prev) =>
+        prev - 1 < 0 ? mentionSuggestions.length - 1 : prev - 1
+      );
+    } else if (event.key === 'Enter' || event.key === 'Tab') {
+      event.preventDefault();
+      applyMention(mentionSuggestions[activeSuggestionIndex].username);
+    } else if (event.key === 'Escape') {
+      setMentionQuery(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newComment.trim() || isSubmitting) {
@@ -76,6 +137,7 @@ function TaskCommentThread({ taskId, groupId, initialCount = 0, onCommentAdded }
 
     const content = newComment.trim();
     setNewComment('');
+    setMentionQuery(null);
 
     try {
       setIsSubmitting(true);
@@ -110,6 +172,11 @@ function TaskCommentThread({ taskId, groupId, initialCount = 0, onCommentAdded }
     });
   };
 
+  const commentMentionsCurrentUser = (comment) =>
+    (comment.mentions || []).some(
+      (mention) => Number(mention.user_id) === Number(currentUser?.id)
+    );
+
   return (
     <div className={styles.thread}>
       <button
@@ -132,10 +199,11 @@ function TaskCommentThread({ taskId, groupId, initialCount = 0, onCommentAdded }
             <div className={styles.commentList}>
               {comments.map((comment) => {
                 const isOwn = Number(comment.user_id) === Number(currentUser?.id);
+                const mentionsYou = commentMentionsCurrentUser(comment);
                 return (
                   <div
                     key={comment.id}
-                    className={`${styles.commentItem} ${isOwn ? styles.ownComment : ''}`}
+                    className={`${styles.commentItem} ${isOwn ? styles.ownComment : ''} ${mentionsYou ? styles.mentionedComment : ''}`}
                   >
                     <UserAvatar
                       username={comment.username}
@@ -147,7 +215,18 @@ function TaskCommentThread({ taskId, groupId, initialCount = 0, onCommentAdded }
                         <span className={styles.commentAuthor}>{comment.username}</span>
                         <span className={styles.commentTime}>{formatTime(comment.created_at)}</span>
                       </div>
-                      <p className={styles.commentText}>{comment.content}</p>
+                      {mentionsYou && !isOwn && (
+                        <div className={styles.mentionedYouLabel}>mentioned you</div>
+                      )}
+                      <p className={styles.commentText}>
+                        {renderMessageWithMentions(
+                          comment.content,
+                          comment.mentions,
+                          currentUser?.id,
+                          styles.mention,
+                          styles.mentionSelf
+                        )}
+                      </p>
                     </div>
                   </div>
                 );
@@ -158,15 +237,36 @@ function TaskCommentThread({ taskId, groupId, initialCount = 0, onCommentAdded }
           {error && <div className={styles.errorMessage}>{error}</div>}
 
           <form className={styles.commentForm} onSubmit={handleSubmit}>
-            <input
-              type="text"
-              className={styles.commentInput}
-              placeholder='Add a comment... e.g. "Blocked on API key"'
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              disabled={isSubmitting}
-              maxLength={2000}
-            />
+            <div className={styles.inputWrapper}>
+              {mentionSuggestions.length > 0 && (
+                <div className={styles.mentionSuggestions}>
+                  {mentionSuggestions.map((member, index) => (
+                    <button
+                      key={member.user_id}
+                      type="button"
+                      className={`${styles.mentionSuggestion} ${index === activeSuggestionIndex ? styles.mentionSuggestionActive : ''}`}
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        applyMention(member.username);
+                      }}
+                    >
+                      @{member.username}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <input
+                ref={inputRef}
+                type="text"
+                className={styles.commentInput}
+                placeholder='Add a comment... use @username to mention'
+                value={newComment}
+                onChange={handleCommentChange}
+                onKeyDown={handleCommentKeyDown}
+                disabled={isSubmitting}
+                maxLength={2000}
+              />
+            </div>
             <button
               type="submit"
               className={styles.commentSubmit}

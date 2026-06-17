@@ -1,4 +1,8 @@
 import pool from '../config/database.js';
+import { getGroupMembers } from './GroupMember.js';
+import { parseMentionsFromContent } from '../utils/mentionParser.js';
+import { createNotification } from './Notification.js';
+import { emitNotification } from '../utils/socket.js';
 
 const validateCommentInput = (content) => {
     const errors = [];
@@ -22,7 +26,7 @@ const validateCommentInput = (content) => {
 
 const ensureTaskMemberAccess = async (taskId, userId) => {
     const taskResult = await pool.query(`
-        SELECT t.id, t.group_id, g.owner_id
+        SELECT t.id, t.group_id, t.title, g.owner_id
         FROM tasks t
         JOIN groups g ON t.group_id = g.id
         WHERE t.id = $1
@@ -51,15 +55,91 @@ const ensureTaskMemberAccess = async (taskId, userId) => {
     return task;
 };
 
-const formatComment = (row) => ({
+const formatComment = (row, mentions = []) => ({
     id: row.id,
     task_id: row.task_id,
     user_id: row.user_id,
     username: row.username || 'Unknown',
     profile_picture_url: row.profile_picture_url || null,
     content: row.content,
-    created_at: row.created_at
+    created_at: row.created_at,
+    mentions
 });
+
+const storeTaskCommentMentions = async (commentId, mentions) => {
+    if (!mentions.length) {
+        return;
+    }
+
+    for (const mention of mentions) {
+        await pool.query(`
+            INSERT INTO task_comment_mentions (comment_id, mentioned_user_id)
+            VALUES ($1, $2)
+            ON CONFLICT (comment_id, mentioned_user_id) DO NOTHING
+        `, [commentId, mention.user_id]);
+    }
+};
+
+const attachMentionsToComments = async (comments) => {
+    if (!comments.length) {
+        return comments;
+    }
+
+    const commentIds = comments.map((comment) => comment.id);
+    const mentionsResult = await pool.query(`
+        SELECT tcm.comment_id, tcm.mentioned_user_id, u.username
+        FROM task_comment_mentions tcm
+        JOIN users u ON tcm.mentioned_user_id = u.id
+        WHERE tcm.comment_id = ANY($1)
+        ORDER BY tcm.id ASC
+    `, [commentIds]);
+
+    const mentionsByCommentId = {};
+    mentionsResult.rows.forEach((row) => {
+        if (!mentionsByCommentId[row.comment_id]) {
+            mentionsByCommentId[row.comment_id] = [];
+        }
+        mentionsByCommentId[row.comment_id].push({
+            user_id: row.mentioned_user_id,
+            username: row.username
+        });
+    });
+
+    return comments.map((comment) => ({
+        ...comment,
+        mentions: mentionsByCommentId[comment.id] || []
+    }));
+};
+
+const notifyMentionedUsers = async ({
+    mentions,
+    authorId,
+    authorUsername,
+    taskId,
+    taskTitle,
+    groupId,
+    commentId
+}) => {
+    for (const mention of mentions) {
+        if (Number(mention.user_id) === Number(authorId)) {
+            continue;
+        }
+
+        const notification = await createNotification(
+            mention.user_id,
+            'task_comment_mention',
+            'Mentioned in a task comment',
+            `${authorUsername} mentioned you on "${taskTitle}"`,
+            {
+                group_id: groupId,
+                task_id: taskId,
+                comment_id: commentId
+            }
+        );
+
+        emitNotification(mention.user_id, notification);
+    }
+};
 
 export const createTaskComment = async (taskId, userId, content) => {
     if (!taskId || isNaN(taskId) || taskId <= 0) {
@@ -75,7 +155,9 @@ export const createTaskComment = async (taskId, userId, content) => {
         throw new Error(validation.errors.join(' '));
     }
 
-    await ensureTaskMemberAccess(taskId, userId);
+    const task = await ensureTaskMemberAccess(taskId, userId);
+    const members = await getGroupMembers(task.group_id);
+    const mentions = parseMentionsFromContent(validation.cleanedContent, members);
 
     const result = await pool.query(`
         INSERT INTO task_comments (task_id, user_id, content)
@@ -84,6 +166,7 @@ export const createTaskComment = async (taskId, userId, content) => {
     `, [taskId, userId, validation.cleanedContent]);
 
     const comment = result.rows[0];
+    await storeTaskCommentMentions(comment.id, mentions);
 
     const userResult = await pool.query(
         'SELECT username, profile_picture_url FROM users WHERE id = $1',
@@ -92,11 +175,21 @@ export const createTaskComment = async (taskId, userId, content) => {
 
     const user = userResult.rows[0];
 
+    await notifyMentionedUsers({
+        mentions,
+        authorId: userId,
+        authorUsername: user?.username || 'Someone',
+        taskId,
+        taskTitle: task.title,
+        groupId: task.group_id,
+        commentId: comment.id
+    });
+
     return formatComment({
         ...comment,
         username: user?.username,
         profile_picture_url: user?.profile_picture_url
-    });
+    }, mentions);
 };
 
 export const getCommentsByTask = async (taskId, userId) => {
@@ -125,5 +218,6 @@ export const getCommentsByTask = async (taskId, userId) => {
         ORDER BY tc.created_at ASC
     `, [taskId]);
 
-    return result.rows.map(formatComment);
+    const comments = result.rows.map((row) => formatComment(row));
+    return attachMentionsToComments(comments);
 };

@@ -162,27 +162,39 @@ function TaskDrawings({
 
   return (
     <div className={styles.drawings}>
-      <div className={styles.headerRow}>
-        <button
-          type="button"
-          className={styles.toggleButton}
-          onClick={handleToggle}
-          aria-expanded={isExpanded}
-        >
-          <span>Drawings ({drawingCount})</span>
-          <span className={`${styles.expandArrow} ${isExpanded ? styles.expanded : ''}`}>▼</span>
-        </button>
+      <div
+        className={styles.headerRow}
+        role="button"
+        tabIndex={0}
+        onClick={handleToggle}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleToggle();
+          }
+        }}
+        aria-expanded={isExpanded}
+      >
+        <span className={styles.toggleLabel}>Drawings ({drawingCount})</span>
 
-        <button
-          type="button"
-          className={styles.createButton}
-          onClick={() => {
-            setError('');
-            setIsCanvasOpen(true);
-          }}
+        <div
+          className={styles.headerActions}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
         >
-          Make Drawing
-        </button>
+          <button
+            type="button"
+            className={styles.createButton}
+            onClick={() => {
+              setError('');
+              setIsCanvasOpen(true);
+            }}
+          >
+            Make Drawing
+          </button>
+        </div>
+
+        <span className={`${styles.expandArrow} ${isExpanded ? styles.expanded : ''}`}>▼</span>
       </div>
 
       {error && !isExpanded && <div className={styles.errorMessage}>{error}</div>}

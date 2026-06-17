@@ -109,8 +109,9 @@ function NotificationsPanel() {
       setIsOpen(false);
 
       const groupId = notification.metadata?.group_id;
+      const taskId = notification.metadata?.task_id;
       if (groupId) {
-        navigate(`/groups/${groupId}`);
+        navigate(`/groups/${groupId}`, taskId ? { state: { expandTaskId: taskId } } : undefined);
       }
     } catch (error) {
       console.error('Failed to mark notification read:', error);

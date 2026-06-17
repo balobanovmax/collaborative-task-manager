@@ -37,11 +37,13 @@ CREATE TABLE tasks (
     due_date TIMESTAMP,
     completed_at TIMESTAMP,
     completed_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
-    assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL
+    assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    priority VARCHAR(20) NOT NULL DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent'))
 );
 
 CREATE INDEX idx_tasks_assigned_to ON tasks(assigned_to);
 CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_tasks_priority ON tasks(priority);
 
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
@@ -78,6 +80,16 @@ CREATE TABLE task_comments (
 CREATE INDEX idx_task_comments_task_id ON task_comments(task_id);
 CREATE INDEX idx_task_comments_created_at ON task_comments(created_at);
 
+CREATE TABLE task_comment_mentions (
+    id SERIAL PRIMARY KEY,
+    comment_id INTEGER NOT NULL REFERENCES task_comments(id) ON DELETE CASCADE,
+    mentioned_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE (comment_id, mentioned_user_id)
+);
+
+CREATE INDEX idx_task_comment_mentions_user ON task_comment_mentions(mentioned_user_id);
+CREATE INDEX idx_task_comment_mentions_comment ON task_comment_mentions(comment_id);
+
 CREATE TABLE task_attachments (
     id SERIAL PRIMARY KEY,
     task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
@@ -106,6 +118,34 @@ CREATE TABLE task_drawings (
 
 CREATE INDEX idx_task_drawings_task_id ON task_drawings(task_id);
 CREATE INDEX idx_task_drawings_user_id ON task_drawings(user_id);
+
+CREATE TABLE task_subtasks (
+    id SERIAL PRIMARY KEY,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    completed_by INTEGER REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX idx_task_subtasks_task_id ON task_subtasks(task_id);
+CREATE INDEX idx_task_subtasks_sort_order ON task_subtasks(task_id, sort_order);
+
+CREATE TABLE task_activity (
+    id SERIAL PRIMARY KEY,
+    task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    action_type VARCHAR(50) NOT NULL,
+    detail TEXT,
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_task_activity_task_id ON task_activity(task_id);
+CREATE INDEX idx_task_activity_created_at ON task_activity(task_id, created_at DESC);
 
 CREATE TABLE group_join_requests (
     id SERIAL PRIMARY KEY,

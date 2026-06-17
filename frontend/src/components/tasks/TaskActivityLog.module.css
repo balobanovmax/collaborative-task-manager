@@ -1,0 +1,96 @@
+.log {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.toggleButton {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-subtle);
+  font-family: inherit;
+  text-align: left;
+}
+
+.toggleButton:hover {
+  color: var(--primary);
+}
+
+.expandArrow {
+  font-size: 11px;
+  transition: transform 0.2s;
+}
+
+.expandArrow.expanded {
+  transform: rotate(180deg);
+}
+
+.body {
+  margin-top: 12px;
+}
+
+.statusText {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.activityList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.activityItem {
+  padding: 10px 12px;
+  background: var(--bg-page);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.activityHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.activityUser {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.activityTime {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.activityDetail {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.errorMessage {
+  padding: 8px 10px;
+  background: var(--danger-bg);
+  color: var(--danger-hover);
+  border-radius: 4px;
+  font-size: 12px;
+}

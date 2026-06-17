@@ -3,6 +3,7 @@ import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import Dashboard from './pages/Dashboard';
+import MyTasks from './pages/MyTasks';
 import MyGroups from './pages/MyGroups';
 import JoinGroup from './pages/JoinGroup';
 import CreateGroup from './pages/CreateGroup';
@@ -22,6 +23,14 @@ function App() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/my-tasks" 
+          element={
+            <ProtectedRoute>
+              <MyTasks />
             </ProtectedRoute>
           } 
         />

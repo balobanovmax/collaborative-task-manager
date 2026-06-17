@@ -59,6 +59,9 @@ function Navbar() {
           {loggedIn ? (
             <>
               <NotificationsPanel />
+              <Link to="/my-tasks" className={styles.btnSecondary}>
+                My Tasks
+              </Link>
               <Link
                 to="/settings"
                 state={{ returnTo: location.pathname }}

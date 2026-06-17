@@ -1,0 +1,53 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.compact {
+  padding: 1px 6px;
+  font-size: 10px;
+}
+
+.low {
+  color: #64748b;
+  background: rgba(100, 116, 139, 0.15);
+}
+
+.medium {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.high {
+  color: #d97706;
+  background: rgba(217, 119, 6, 0.15);
+}
+
+.urgent {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.15);
+}
+
+.clickable {
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.clickable:hover:not(:disabled) {
+  opacity: 0.85;
+  transform: scale(1.03);
+}
+
+.clickable:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

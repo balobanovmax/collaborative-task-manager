@@ -46,6 +46,13 @@ function Dashboard() {
           <div className={styles.actionsGrid}>
             <button 
               className={styles.actionButton}
+              onClick={() => navigate('/my-tasks')}
+            >
+              My Tasks
+            </button>
+
+            <button 
+              className={styles.actionButton}
               onClick={() => navigate('/my-groups')}
             >
               My Groups

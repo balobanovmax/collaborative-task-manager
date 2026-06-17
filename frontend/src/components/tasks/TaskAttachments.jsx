@@ -187,33 +187,45 @@ function TaskAttachments({
 
   return (
     <div className={styles.attachments}>
-      <div className={styles.headerRow}>
-        <button
-          type="button"
-          className={styles.toggleButton}
-          onClick={handleToggle}
-          aria-expanded={isExpanded}
-        >
-          <span>Attachments ({attachmentCount})</span>
-          <span className={`${styles.expandArrow} ${isExpanded ? styles.expanded : ''}`}>▼</span>
-        </button>
+      <div
+        className={styles.headerRow}
+        role="button"
+        tabIndex={0}
+        onClick={handleToggle}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleToggle();
+          }
+        }}
+        aria-expanded={isExpanded}
+      >
+        <span className={styles.toggleLabel}>Attachments ({attachmentCount})</span>
 
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/pdf,image/*,text/plain"
-          className={styles.hiddenInput}
-          onChange={handleFileSelect}
-          disabled={isUploading}
-        />
-        <button
-          type="button"
-          className={styles.attachButton}
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
+        <div
+          className={styles.headerActions}
+          onClick={(event) => event.stopPropagation()}
+          onKeyDown={(event) => event.stopPropagation()}
         >
-          {isUploading ? 'Uploading...' : 'Attach Document'}
-        </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,application/pdf,image/*,text/plain"
+            className={styles.hiddenInput}
+            onChange={handleFileSelect}
+            disabled={isUploading}
+          />
+          <button
+            type="button"
+            className={styles.attachButton}
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? 'Uploading...' : 'Attach Document'}
+          </button>
+        </div>
+
+        <span className={`${styles.expandArrow} ${isExpanded ? styles.expanded : ''}`}>▼</span>
       </div>
 
       <p className={styles.helperText}>

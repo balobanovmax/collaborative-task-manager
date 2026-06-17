@@ -113,8 +113,15 @@ export const groupAPI = {
     return response.data;
   },
 
-  getGroupTasks: async (groupId) => {
-    const response = await api.get(`/tasks/group/${groupId}`);
+  getGroupTasks: async (groupId, filters = {}) => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '' && value !== 'all' && value !== false) {
+        params.set(key, String(value));
+      }
+    });
+    const query = params.toString();
+    const response = await api.get(`/tasks/group/${groupId}${query ? `?${query}` : ''}`);
     return response.data;
   },
 
@@ -186,13 +193,14 @@ export const notificationAPI = {
 };
 
 export const taskAPI = {
-  createTask: async (groupId, title, description, dueDate, assignedTo = null) => {
+  createTask: async (groupId, title, description, dueDate, assignedTo = null, priority = 'medium') => {
     const response = await api.post('/tasks', {
       group_id: groupId,
       title,
       description,
       due_date: dueDate,
-      assigned_to: assignedTo
+      assigned_to: assignedTo,
+      priority
     });
     return response.data;
   },
@@ -209,6 +217,46 @@ export const taskAPI = {
 
   updateTaskStatus: async (taskId, status) => {
     const response = await api.patch(`/tasks/${taskId}/status`, { status });
+    return response.data;
+  },
+
+  getMyTasks: async ({
+    includeDone = false,
+    sortBy = 'due_date',
+    sortOrder = 'ASC',
+    search = '',
+    status = 'all',
+    priority = 'all',
+    dueFrom = '',
+    dueTo = '',
+    overdueOnly = false
+  } = {}) => {
+    const params = new URLSearchParams({
+      includeDone: String(includeDone),
+      sortBy,
+      sortOrder
+    });
+
+    if (search?.trim()) {
+      params.set('search', search.trim());
+    }
+    if (status && status !== 'all') {
+      params.set('status', status);
+    }
+    if (priority && priority !== 'all') {
+      params.set('priority', priority);
+    }
+    if (dueFrom) {
+      params.set('dueFrom', dueFrom);
+    }
+    if (dueTo) {
+      params.set('dueTo', dueTo);
+    }
+    if (overdueOnly) {
+      params.set('overdueOnly', 'true');
+    }
+
+    const response = await api.get(`/tasks/my-tasks?${params.toString()}`);
     return response.data;
   },
 
@@ -267,6 +315,31 @@ export const taskAPI = {
 
   deleteDrawing: async (taskId, drawingId) => {
     const response = await api.delete(`/tasks/${taskId}/drawings/${drawingId}`);
+    return response.data;
+  },
+
+  getSubtasks: async (taskId) => {
+    const response = await api.get(`/tasks/${taskId}/subtasks`);
+    return response.data;
+  },
+
+  addSubtask: async (taskId, title) => {
+    const response = await api.post(`/tasks/${taskId}/subtasks`, { title });
+    return response.data;
+  },
+
+  updateSubtask: async (taskId, subtaskId, updates) => {
+    const response = await api.patch(`/tasks/${taskId}/subtasks/${subtaskId}`, updates);
+    return response.data;
+  },
+
+  deleteSubtask: async (taskId, subtaskId) => {
+    const response = await api.delete(`/tasks/${taskId}/subtasks/${subtaskId}`);
+    return response.data;
+  },
+
+  getTaskActivity: async (taskId, limit = 50) => {
+    const response = await api.get(`/tasks/${taskId}/activity?limit=${limit}`);
     return response.data;
   }
 };

@@ -17,6 +17,7 @@
   font-weight: 600;
   color: var(--text-subtle);
   font-family: inherit;
+  text-align: left;
 }
 
 .toggleButton:hover {
@@ -105,8 +106,75 @@
   gap: 8px;
 }
 
-.commentInput {
+.inputWrapper {
+  position: relative;
   flex: 1;
+}
+
+.mention {
+  color: var(--primary);
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.12);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.mentionSelf {
+  color: var(--warning, #d97706);
+  font-weight: 700;
+  background: rgba(217, 119, 6, 0.15);
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+.mentionedComment {
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+.mentionedYouLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--warning, #d97706);
+  margin-bottom: 4px;
+}
+
+.mentionSuggestions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px var(--shadow-sm);
+  overflow: hidden;
+  z-index: 2;
+}
+
+.mentionSuggestion {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mentionSuggestion:hover,
+.mentionSuggestionActive {
+  background: var(--bg-hover);
+  color: var(--primary);
+}
+
+.commentInput {
+  width: 100%;
+  box-sizing: border-box;
   padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 4px;

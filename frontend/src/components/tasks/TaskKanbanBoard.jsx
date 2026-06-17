@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import styles from './TaskKanbanBoard.module.css';
 import UserAvatar from '../common/UserAvatar';
+import TaskPriorityBadge from './TaskPriorityBadge';
 import { getTaskStatus, getStatusLabel, TASK_STATUSES } from '../../utils/taskStatus';
+import { compareTaskPriority } from '../../utils/taskPriority';
 
-function TaskKanbanBoard({ tasks, onStatusChange, getTaskAssignee, isUpdating = false }) {
+function TaskKanbanBoard({ tasks, onStatusChange, onPriorityChange, getTaskAssignee, isUpdating = false }) {
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
 
   const tasksByStatus = TASK_STATUSES.reduce((acc, status) => {
-    acc[status] = tasks.filter((task) => getTaskStatus(task) === status);
+    acc[status] = tasks
+      .filter((task) => getTaskStatus(task) === status)
+      .sort(compareTaskPriority);
     return acc;
   }, {});
 
@@ -80,7 +84,15 @@ function TaskKanbanBoard({ tasks, onStatusChange, getTaskAssignee, isUpdating = 
                     onDragStart={(event) => handleDragStart(event, task.id)}
                     onDragEnd={handleDragEnd}
                   >
-                    <h4 className={styles.cardTitle}>{task.title}</h4>
+                    <div className={styles.cardHeader}>
+                      <h4 className={styles.cardTitle}>{task.title}</h4>
+                      <TaskPriorityBadge
+                        task={task}
+                        compact
+                        onPriorityChange={onPriorityChange}
+                        disabled={isUpdating}
+                      />
+                    </div>
                     {task.description && (
                       <p className={styles.cardDescription}>{task.description}</p>
                     )}

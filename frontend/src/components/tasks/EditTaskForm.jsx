@@ -2,6 +2,7 @@ import { useState } from 'react';
 import styles from './EditTaskForm.module.css';
 import { taskAPI } from '../../services/api';
 import { getTaskStatus, getStatusLabel } from '../../utils/taskStatus';
+import { TASK_PRIORITIES, getPriorityLabel, getTaskPriority } from '../../utils/taskPriority';
 
 function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
   const [selectedTaskId, setSelectedTaskId] = useState(null);
@@ -9,6 +10,7 @@ function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
+  const [priority, setPriority] = useState('medium');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -26,6 +28,7 @@ function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
       setDueDate('');
     }
     setAssignedTo(task.assigned_to ? String(task.assigned_to) : '');
+    setPriority(getTaskPriority(task));
   };
 
   const handleSubmit = async (e) => {
@@ -56,7 +59,8 @@ function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
         title: title.trim(),
         description: description.trim() || null,
         due_date: dueDate || null,
-        assigned_to: assignedTo ? parseInt(assignedTo, 10) : null
+        assigned_to: assignedTo ? parseInt(assignedTo, 10) : null,
+        priority
       });
 
       onSuccess();
@@ -76,6 +80,7 @@ function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
     setDescription('');
     setDueDate('');
     setAssignedTo('');
+    setPriority('medium');
     setErrorMessage('');
   };
 
@@ -131,6 +136,20 @@ function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
                 <option key={member.user_id} value={member.user_id}>
                   {member.username}
                 </option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>Priority</label>
+            <select
+              className={styles.formInput}
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              disabled={isLoading}
+            >
+              {TASK_PRIORITIES.map((level) => (
+                <option key={level} value={level}>{getPriorityLabel(level)}</option>
               ))}
             </select>
           </div>

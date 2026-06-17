@@ -2,11 +2,14 @@ import { useState } from 'react';
 import styles from './CreateTaskForm.module.css';
 import { taskAPI } from '../../services/api';
 
+import { TASK_PRIORITIES, getPriorityLabel } from '../../utils/taskPriority';
+
 function CreateTaskForm({ groupId, members = [], onSuccess, onCancel }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
+  const [priority, setPriority] = useState('medium');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -47,7 +50,8 @@ function CreateTaskForm({ groupId, members = [], onSuccess, onCancel }) {
         title.trim(),
         description.trim() || null,
         dueDate || null,
-        assignedTo ? parseInt(assignedTo, 10) : null
+        assignedTo ? parseInt(assignedTo, 10) : null,
+        priority
       );
 
       onSuccess();
@@ -112,6 +116,20 @@ function CreateTaskForm({ groupId, members = [], onSuccess, onCancel }) {
               <option key={member.user_id} value={member.user_id}>
                 {member.username}
               </option>
+            ))}
+          </select>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel}>Priority</label>
+          <select
+            className={styles.formInput}
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            disabled={isLoading}
+          >
+            {TASK_PRIORITIES.map((level) => (
+              <option key={level} value={level}>{getPriorityLabel(level)}</option>
             ))}
           </select>
         </div>

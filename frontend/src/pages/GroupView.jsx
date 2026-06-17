@@ -1,13 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import styles from './GroupView.module.css';
 import Navbar from '../components/common/Navbar';
 import TaskManagementModal from '../components/tasks/TaskManagementModal';
-import TaskCommentThread from '../components/tasks/TaskCommentThread';
-import TaskAttachments from '../components/tasks/TaskAttachments';
-import TaskDrawings from '../components/tasks/TaskDrawings';
 import TaskKanbanBoard from '../components/tasks/TaskKanbanBoard';
-import TaskStatusControl from '../components/tasks/TaskStatusControl';
+import TaskListItem from '../components/tasks/TaskListItem';
 import ConfirmModal from '../components/common/ConfirmModal';
 import MemberProfileModal from '../components/groups/MemberProfileModal';
 import LeaveGroupModal from '../components/groups/LeaveGroupModal';
@@ -21,6 +18,10 @@ import { groupAPI, userAPI, taskAPI } from '../services/api';
 import { getUser } from '../utils/auth';
 import { useVoiceChat } from '../hooks/useVoiceChat';
 import { getTaskStatus } from '../utils/taskStatus';
+import { getTaskPriority } from '../utils/taskPriority';
+import { applyTaskFilters, DEFAULT_TASK_FILTERS } from '../utils/taskFilters';
+import { compareTaskPriority } from '../utils/taskPriority';
+import TaskFiltersBar from '../components/tasks/TaskFiltersBar';
 import {
   connectSocket,
   joinGroup,
@@ -61,6 +62,7 @@ const getTaskAssignee = (task) => {
 function GroupView() {
   const { groupId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const currentUser = getUser();
   
   const [group, setGroup] = useState(null);
@@ -91,8 +93,9 @@ function GroupView() {
   const [editPassword, setEditPassword] = useState('');
   const [editError, setEditError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [assigneeFilter, setAssigneeFilter] = useState('all');
+  const [taskFilters, setTaskFilters] = useState(DEFAULT_TASK_FILTERS);
   const [taskViewMode, setTaskViewMode] = useState('list');
+  const [expandedTaskId, setExpandedTaskId] = useState(null);
   const [isUpdatingTaskStatus, setIsUpdatingTaskStatus] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [joinRequests, setJoinRequests] = useState([]);
@@ -103,27 +106,27 @@ function GroupView() {
   const [leaveGroupError, setLeaveGroupError] = useState('');
 
   useEffect(() => {
-    setAssigneeFilter('all');
+    setTaskFilters(DEFAULT_TASK_FILTERS);
     setTaskViewMode('list');
     setSelectedMember(null);
     setJoinRequests([]);
   }, [groupId]);
 
-  const filteredTasks = tasks.filter((task) => {
-    if (assigneeFilter === 'all') {
-      return true;
-    }
+  const filteredTasks = applyTaskFilters(tasks, taskFilters, currentUser?.id)
+    .sort(compareTaskPriority);
 
-    if (assigneeFilter === 'unassigned') {
-      return !task.assigned_to;
+  useEffect(() => {
+    if (location.state?.expandTaskId) {
+      setExpandedTaskId(location.state.expandTaskId);
+      navigate(location.pathname, { replace: true, state: {} });
     }
+  }, [location.pathname, location.state?.expandTaskId, navigate]);
 
-    if (assigneeFilter === 'me') {
-      return Number(task.assigned_to) === Number(currentUser?.id);
+  useEffect(() => {
+    if (expandedTaskId && !filteredTasks.some((task) => task.id === expandedTaskId)) {
+      setExpandedTaskId(null);
     }
-
-    return Number(task.assigned_to) === Number(assigneeFilter);
-  });
+  }, [filteredTasks, expandedTaskId]);
 
   const fetchGroupData = useCallback(async (showLoading = true) => {
     try {
@@ -507,6 +510,18 @@ function GroupView() {
     );
   };
 
+  const handleSubtaskUpdated = (updatedTask) => {
+    if (!updatedTask?.id) {
+      return;
+    }
+
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        Number(task.id) === Number(updatedTask.id) ? { ...task, ...updatedTask } : task
+      )
+    );
+  };
+
   const handleTaskStatusChange = async (taskId, nextStatus) => {
     const task = tasks.find((entry) => Number(entry.id) === Number(taskId));
     if (!task || getTaskStatus(task) === nextStatus || isUpdatingTaskStatus) {
@@ -526,6 +541,31 @@ function GroupView() {
       }
     } catch (error) {
       setErrorMessage(error.response?.data?.message || 'Failed to update task status.');
+      setTimeout(() => setErrorMessage(''), 3000);
+    } finally {
+      setIsUpdatingTaskStatus(false);
+    }
+  };
+
+  const handleTaskPriorityChange = async (taskId, nextPriority) => {
+    const task = tasks.find((entry) => Number(entry.id) === Number(taskId));
+    if (!task || getTaskPriority(task) === nextPriority || isUpdatingTaskStatus) {
+      return;
+    }
+
+    setIsUpdatingTaskStatus(true);
+
+    try {
+      const response = await taskAPI.updateTask(taskId, { priority: nextPriority });
+      const updatedTask = response.data?.task;
+
+      if (updatedTask) {
+        setTasks((prevTasks) =>
+          prevTasks.map((entry) => (entry.id === updatedTask.id ? updatedTask : entry))
+        );
+      }
+    } catch (error) {
+      setErrorMessage(error.response?.data?.message || 'Failed to update task priority.');
       setTimeout(() => setErrorMessage(''), 3000);
     } finally {
       setIsUpdatingTaskStatus(false);
@@ -936,21 +976,6 @@ function GroupView() {
                   <h2 className={styles.sectionTitle}>
                     Tasks ({filteredTasks.length}{filteredTasks.length !== tasks.length ? ` / ${tasks.length}` : ''})
                   </h2>
-                  <select
-                    className={styles.assigneeFilter}
-                    value={assigneeFilter}
-                    onChange={(e) => setAssigneeFilter(e.target.value)}
-                    aria-label="Filter tasks by assignee"
-                  >
-                    <option value="all">All assignees</option>
-                    <option value="unassigned">Unassigned</option>
-                    <option value="me">Assigned to me</option>
-                    {members.map((member) => (
-                      <option key={member.user_id} value={member.user_id}>
-                        {member.username}
-                      </option>
-                    ))}
-                  </select>
                 </div>
                 <div className={styles.tasksHeaderActions}>
                   <div className={styles.viewToggle}>
@@ -978,100 +1003,50 @@ function GroupView() {
                 </div>
               </div>
 
+              <TaskFiltersBar
+                filters={taskFilters}
+                onChange={setTaskFilters}
+                members={members}
+              />
+
               {tasks.length === 0 ? (
                 <div className={styles.emptyState}>
                   <p>No tasks yet. Create one to get started!</p>
                 </div>
               ) : filteredTasks.length === 0 ? (
                 <div className={styles.emptyState}>
-                  <p>No tasks match this assignee filter.</p>
+                  <p>No tasks match your filters.</p>
                 </div>
               ) : taskViewMode === 'kanban' ? (
                 <TaskKanbanBoard
                   tasks={filteredTasks}
                   onStatusChange={handleTaskStatusChange}
+                  onPriorityChange={handleTaskPriorityChange}
                   getTaskAssignee={getTaskAssignee}
                   isUpdating={isUpdatingTaskStatus}
                 />
               ) : (
                 <div className={styles.tasksList}>
-                  {filteredTasks.map((task) => {
-                    const status = getTaskStatus(task);
-                    const assignee = getTaskAssignee(task);
-                    return (
-                    <div key={task.id} className={styles.taskCard}>
-                      <div className={styles.taskHeader}>
-                        <h3 className={styles.taskTitle}>{task.title}</h3>
-                        <TaskStatusControl
-                          task={task}
-                          onStatusChange={handleTaskStatusChange}
-                          disabled={isUpdatingTaskStatus}
-                        />
-                      </div>
-                      
-                      {task.description && (
-                        <p className={styles.taskDescription}>{task.description}</p>
-                      )}
-
-                      <div className={styles.assigneeRow}>
-                        {assignee ? (
-                          <>
-                            <UserAvatar
-                              username={assignee.username}
-                              profilePictureUrl={assignee.profile_picture_url}
-                              size="sm"
-                            />
-                            <span className={styles.assigneeLabel}>
-                              Assigned to <strong>{assignee.username}</strong>
-                            </span>
-                          </>
-                        ) : (
-                          <span className={styles.unassignedLabel}>Unassigned</span>
-                        )}
-                      </div>
-                      
-                      <div className={styles.taskMeta}>
-                        <span className={styles.taskInfo}>
-                            Created by: {task.creator_username || task.creator?.username || 'Unknown'}
-                        </span>
-                        {task.due_date && (
-                          <span className={styles.taskInfo}>
-                            Due: {new Date(task.due_date).toLocaleDateString()}
-                          </span>
-                        )}
-                      </div>
-
-                        {status === 'done' && (task.completer_username || task.completer?.username) && (
-                        <div className={styles.completedInfo}>
-                            Done by {task.completer_username || task.completer?.username}
-                        </div>
-                      )}
-
-                      <TaskCommentThread
-                        taskId={task.id}
-                        groupId={parseInt(groupId)}
-                        initialCount={task.comment_count || 0}
-                        onCommentAdded={handleTaskCommentAdded}
-                      />
-
-                      <TaskAttachments
-                        taskId={task.id}
-                        initialCount={task.attachment_count || 0}
-                        taskCreatedBy={task.created_by}
-                        groupOwnerId={group?.owner_id}
-                        onAttachmentAdded={handleTaskAttachmentAdded}
-                      />
-
-                      <TaskDrawings
-                        taskId={task.id}
-                        initialCount={task.drawing_count || 0}
-                        taskCreatedBy={task.created_by}
-                        groupOwnerId={group?.owner_id}
-                        onDrawingAdded={handleTaskDrawingAdded}
-                      />
-                    </div>
-                    );
-                  })}
+                  {filteredTasks.map((task) => (
+                    <TaskListItem
+                      key={task.id}
+                      task={task}
+                      groupId={parseInt(groupId, 10)}
+                      groupOwnerId={group?.owner_id}
+                      members={members}
+                      assignee={getTaskAssignee(task)}
+                      isExpanded={expandedTaskId === task.id}
+                      onExpand={setExpandedTaskId}
+                      onCollapse={() => setExpandedTaskId(null)}
+                      onStatusChange={handleTaskStatusChange}
+                      onPriorityChange={handleTaskPriorityChange}
+                      isUpdatingStatus={isUpdatingTaskStatus}
+                      onCommentAdded={handleTaskCommentAdded}
+                      onAttachmentAdded={handleTaskAttachmentAdded}
+                      onDrawingAdded={handleTaskDrawingAdded}
+                      onSubtaskUpdated={handleSubtaskUpdated}
+                    />
+                  ))}
                 </div>
               )}
             </div>
