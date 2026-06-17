@@ -233,6 +233,28 @@ export const taskAPI = {
   deleteAttachment: async (taskId, attachmentId) => {
     const response = await api.delete(`/tasks/${taskId}/attachments/${attachmentId}`);
     return response.data;
+  },
+
+  getDrawings: async (taskId) => {
+    const response = await api.get(`/tasks/${taskId}/drawings`);
+    return response.data;
+  },
+
+  uploadDrawing: async (taskId, file, title = 'Drawing') => {
+    const formData = new FormData();
+    formData.append('drawing', file);
+    formData.append('title', title);
+    const response = await api.post(`/tasks/${taskId}/drawings`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  },
+
+  deleteDrawing: async (taskId, drawingId) => {
+    const response = await api.delete(`/tasks/${taskId}/drawings/${drawingId}`);
+    return response.data;
   }
 };
 

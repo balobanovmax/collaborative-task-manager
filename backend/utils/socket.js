@@ -79,3 +79,11 @@ export const emitTaskAttachmentDeleted = (groupId, taskId, attachmentId) => {
     emitToGroup(groupId, 'task-attachment-deleted', { taskId, attachmentId });
 };
 
+export const emitTaskDrawingAdded = (groupId, taskId, drawing) => {
+    emitToGroup(groupId, 'task-drawing-added', { taskId, drawing });
+};
+
+export const emitTaskDrawingDeleted = (groupId, taskId, drawingId) => {
+    emitToGroup(groupId, 'task-drawing-deleted', { taskId, drawingId });
+};
+

@@ -14,8 +14,15 @@ import {
     getAttachmentsByTask,
     deleteTaskAttachment
 } from '../models/TaskAttachment.js';
+import {
+    createTaskDrawing,
+    getDrawingsByTask,
+    deleteTaskDrawing
+} from '../models/TaskDrawing.js';
 import { uploadTaskAttachment } from '../middleware/uploadTaskAttachment.js';
+import { uploadTaskDrawing } from '../middleware/uploadTaskDrawing.js';
 import { getTaskAttachmentPublicPath, deleteTaskAttachmentFile } from '../utils/taskAttachmentFiles.js';
+import { getTaskDrawingPublicPath, deleteTaskDrawingFile } from '../utils/taskDrawingFiles.js';
 import {
     emitTaskCreated,
     emitTaskUpdated,
@@ -23,7 +30,9 @@ import {
     emitTaskToggled,
     emitTaskCommentCreated,
     emitTaskAttachmentAdded,
-    emitTaskAttachmentDeleted
+    emitTaskAttachmentDeleted,
+    emitTaskDrawingAdded,
+    emitTaskDrawingDeleted
 } from '../utils/socket.js';
 
 const router = express.Router();
@@ -186,6 +195,136 @@ router.delete('/:id/attachments/:attachmentId', requireAuth, async (req, res) =>
         });
     } catch (error) {
         console.error('Error deleting task attachment:', error);
+
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('must be a member') || error.message.includes('can only delete')) {
+            statusCode = 403;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.get('/:id/drawings', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id);
+
+        if (isNaN(taskId) || taskId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid task ID'
+            });
+        }
+
+        const drawings = await getDrawingsByTask(taskId, req.userId);
+
+        res.json({
+            success: true,
+            data: { drawings }
+        });
+    } catch (error) {
+        console.error('Error fetching task drawings:', error);
+
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('must be a member')) {
+            statusCode = 403;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.post('/:id/drawings', requireAuth, (req, res) => {
+    uploadTaskDrawing.single('drawing')(req, res, async (uploadError) => {
+        if (uploadError) {
+            return res.status(400).json({
+                success: false,
+                message: uploadError.message || 'Failed to upload drawing'
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Drawing file is required'
+            });
+        }
+
+        const taskId = parseInt(req.params.id);
+
+        if (isNaN(taskId) || taskId <= 0) {
+            deleteTaskDrawingFile(getTaskDrawingPublicPath(req.file.filename));
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid task ID'
+            });
+        }
+
+        try {
+            const drawing = await createTaskDrawing(taskId, req.userId, req.file, req.body.title);
+            const task = await findTaskById(taskId);
+
+            emitTaskDrawingAdded(task.group_id, taskId, drawing);
+
+            res.status(201).json({
+                success: true,
+                message: 'Drawing saved successfully',
+                data: { drawing }
+            });
+        } catch (error) {
+            deleteTaskDrawingFile(getTaskDrawingPublicPath(req.file.filename));
+
+            console.error('Error saving task drawing:', error);
+
+            let statusCode = 400;
+            if (error.message.includes('not found')) {
+                statusCode = 404;
+            } else if (error.message.includes('must be a member')) {
+                statusCode = 403;
+            }
+
+            res.status(statusCode).json({
+                success: false,
+                message: error.message || 'Failed to save drawing'
+            });
+        }
+    });
+});
+
+router.delete('/:id/drawings/:drawingId', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id);
+        const drawingId = parseInt(req.params.drawingId);
+
+        if (isNaN(taskId) || taskId <= 0 || isNaN(drawingId) || drawingId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid task ID or drawing ID'
+            });
+        }
+
+        const result = await deleteTaskDrawing(drawingId, req.userId);
+        const task = await findTaskById(taskId);
+
+        emitTaskDrawingDeleted(task.group_id, taskId, result.id);
+
+        res.json({
+            success: true,
+            message: 'Drawing deleted successfully',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error deleting task drawing:', error);
 
         let statusCode = 400;
         if (error.message.includes('not found')) {

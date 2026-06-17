@@ -5,6 +5,7 @@ import Navbar from '../components/common/Navbar';
 import TaskManagementModal from '../components/tasks/TaskManagementModal';
 import TaskCommentThread from '../components/tasks/TaskCommentThread';
 import TaskAttachments from '../components/tasks/TaskAttachments';
+import TaskDrawings from '../components/tasks/TaskDrawings';
 import ConfirmModal from '../components/common/ConfirmModal';
 import MemberProfileModal from '../components/groups/MemberProfileModal';
 import ChatPanel from '../components/chat/ChatPanel';
@@ -26,7 +27,8 @@ import {
   onGroupUpdated,
   onJoinRequestUpdated,
   onTaskCommentCreated,
-  onTaskAttachmentAdded
+  onTaskAttachmentAdded,
+  onTaskDrawingAdded
 } from '../services/socket';
 
 const getTaskAssignee = (task) => {
@@ -327,6 +329,24 @@ function GroupView() {
           )
         );
       }));
+
+      unsubscribers.push(onTaskDrawingAdded((data) => {
+        if (!mounted) {
+          return;
+        }
+
+        if (Number(data.drawing.user_id) === Number(currentUserIdRef.current)) {
+          return;
+        }
+
+        setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            Number(task.id) === Number(data.taskId)
+              ? { ...task, drawing_count: (task.drawing_count || 0) + 1 }
+              : task
+          )
+        );
+      }));
     };
 
     setupSocket();
@@ -366,6 +386,16 @@ function GroupView() {
       prevTasks.map((task) =>
         Number(task.id) === Number(taskId)
           ? { ...task, attachment_count: (task.attachment_count || 0) + 1 }
+          : task
+      )
+    );
+  };
+
+  const handleTaskDrawingAdded = (taskId) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        Number(task.id) === Number(taskId)
+          ? { ...task, drawing_count: (task.drawing_count || 0) + 1 }
           : task
       )
     );
@@ -830,6 +860,14 @@ function GroupView() {
                         taskCreatedBy={task.created_by}
                         groupOwnerId={group?.owner_id}
                         onAttachmentAdded={handleTaskAttachmentAdded}
+                      />
+
+                      <TaskDrawings
+                        taskId={task.id}
+                        initialCount={task.drawing_count || 0}
+                        taskCreatedBy={task.created_by}
+                        groupOwnerId={group?.owner_id}
+                        onDrawingAdded={handleTaskDrawingAdded}
                       />
                     </div>
                     );
