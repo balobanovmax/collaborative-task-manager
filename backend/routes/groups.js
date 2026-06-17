@@ -6,12 +6,6 @@ import { emitMemberJoined, emitMemberRemoved, emitGroupUpdated } from '../utils/
 
 const router = express.Router();
 
-/**
- * Create a new group
- * POST /api/groups
- * Body: { name, description, is_public, join_password }
- * Auth: Required (user must be logged in)
- */
 router.post('/', requireAuth, async (req, res) => {
     try {
         // Get user ID from auth middleware
@@ -207,11 +201,6 @@ router.post('/:id/join', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * Get group members
- * GET /api/groups/:id/members
- * Auth: Not required (public group info)
- */
 router.get('/:id/members', requireAuth, async (req, res) => {
     try {
         const groupId = parseInt(req.params.id);
@@ -263,11 +252,6 @@ router.get('/:id/members', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * Leave a group
- * DELETE /api/groups/:id/leave
- * Auth: Required (user must be logged in)
- */
 router.delete('/:id/leave', requireAuth, async (req, res) => {
     try {
         // Extract and validate group ID from URL parameter
@@ -386,11 +370,6 @@ router.delete('/:id/members/:userId', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * Delete a group
- * DELETE /api/groups/:id
- * Auth: Required (only group owner can delete)
- */
 router.delete('/:id', requireAuth, async (req, res) => {
     try {
         // Extract and validate group ID from URL parameter

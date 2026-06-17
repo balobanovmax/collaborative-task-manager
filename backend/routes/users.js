@@ -6,11 +6,6 @@ import { getGroupsByOwner } from '../models/Group.js';
 
 const router = express.Router();
 
-/**
- * Get current user's own profile (private)
- * GET /api/users/profile
- * Auth: Required (user must be logged in)
- */
 router.get('/profile', requireAuth, async (req, res) => {
     try {
         // Get user ID from auth middleware
@@ -46,12 +41,6 @@ router.get('/profile', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * Update current user's profile
- * PUT /api/users/profile
- * Body: { bio, profile_picture_url } (both optional)
- * Auth: Required (user must be logged in)
- */
 router.put('/profile', requireAuth, async (req, res) => {
     try {
         // Get user ID from auth middleware
@@ -108,12 +97,6 @@ router.put('/profile', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * Get current user's groups (owned and member groups)
- * GET /api/users/groups
- * Auth: Required (user must be logged in)
- * NOTE: This route MUST come before /:id route to avoid conflicts
- */
 router.get('/groups', requireAuth, async (req, res) => {
     try {
         // Get user ID from auth middleware
@@ -158,12 +141,6 @@ router.get('/groups', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * Get user's public profile by ID
- * GET /api/users/:id
- * Auth: Not required (public endpoint)
- * NOTE: This route MUST come after /groups to avoid route conflicts
- */
 router.get('/:id', async (req, res) => {
     try {
         // Extract and validate user ID from URL parameter

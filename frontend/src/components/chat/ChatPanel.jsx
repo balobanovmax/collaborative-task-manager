@@ -33,20 +33,35 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner }) {
   }, [messages]);
 
   useEffect(() => {
-    if (isOpen) {
-      onMessageSent((data) => {
-        setMessages(prevMessages => {
-          const exists = prevMessages.some(m => m.id === data.message.id);
-          if (exists) return prevMessages;
-          return [...prevMessages, data.message];
-        });
-      });
-
-      onChatCleared(() => {
-        setMessages([]);
-      });
+    if (!isOpen) {
+      return undefined;
     }
-  }, [isOpen]);
+
+    const unsubscribeMessage = onMessageSent((data) => {
+      if (data.message.group_id !== groupId) {
+        return;
+      }
+
+      setMessages(prevMessages => {
+        const exists = prevMessages.some(m => m.id === data.message.id);
+        if (exists) return prevMessages;
+        return [...prevMessages, data.message];
+      });
+    });
+
+    const unsubscribeClear = onChatCleared((data) => {
+      if (data.groupId !== groupId) {
+        return;
+      }
+
+      setMessages([]);
+    });
+
+    return () => {
+      unsubscribeMessage();
+      unsubscribeClear();
+    };
+  }, [isOpen, groupId]);
 
   const fetchMessages = async () => {
     try {

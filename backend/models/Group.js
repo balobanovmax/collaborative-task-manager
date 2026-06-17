@@ -1,12 +1,6 @@
 import pool from '../config/database.js';
 import { hashPassword, comparePassword } from '../utils/passwordHash.js';
 
-/**
- * Validates group input data
- * @param {string} name - Group name
- * @param {string} description - Group description (optional)
- * @returns {string[]} Array of validation errors (empty if valid)
- */
 const validateGroupInput = (name, description = '') => {
     const errors = [];
     
@@ -27,45 +21,30 @@ const validateGroupInput = (name, description = '') => {
     return errors;
 };
 
-/**
- * Create a new group
- * @param {string} name - Group name
- * @param {number} ownerId - User ID of group creator
- * @param {string} description - Group description (optional)
- * @param {boolean} isPublic - Whether group is public or private
- * @param {string} joinPassword - Password for private groups (optional)
- * @returns {object} Created group object (without password hash)
- */
 export const createGroup = async (name, ownerId, description = '', isPublic = false, joinPassword = null) => {
     try {
-        // Input validation
         const validationErrors = validateGroupInput(name, description);
         if (validationErrors.length > 0) {
             throw new Error(`Validation failed: ${validationErrors.join(', ')}`);
         }
         
-        // Validate owner ID
         if (!ownerId || typeof ownerId !== 'number') {
             throw new Error('Valid owner ID is required');
         }
         
-        // Trim and normalize inputs
         const normalizedName = name.trim();
         const normalizedDescription = description ? description.trim() : '';
         
-        // Check if group name already exists for this owner (prevent duplicate group names per user)
         const existingGroup = await groupNameExistsForOwner(normalizedName, ownerId);
         if (existingGroup) {
             throw new Error('You already have a group with this name');
         }
         
-        // Hash join password if provided
         let joinPasswordHash = null;
         if (joinPassword) {
             joinPasswordHash = await hashPassword(joinPassword);
         }
         
-        // Insert group into database
         const query = `
             INSERT INTO groups (name, owner_id, description, is_public, join_password_hash, created_at)
             VALUES ($1, $2, $3, $4, $5, NOW())
@@ -75,7 +54,6 @@ export const createGroup = async (name, ownerId, description = '', isPublic = fa
         const values = [normalizedName, ownerId, normalizedDescription, isPublic, joinPasswordHash];
         const result = await pool.query(query, values);
         
-        // Ensure we got a result
         if (!result.rows || result.rows.length === 0) {
             throw new Error('Group creation failed - no data returned');
         }
@@ -86,37 +64,25 @@ export const createGroup = async (name, ownerId, description = '', isPublic = fa
         return newGroup;
         
     } catch (error) {
-        // Handle specific database errors
         if (error.code === '23505') {
-            // Duplicate key violation (if we add unique constraints later)
             throw new Error('Group name already exists');
         } else if (error.code === '23503') {
-            // Foreign key violation
             throw new Error('Invalid owner ID - user does not exist');
         } else if (error.code === '23502') {
-            // Not null violation
             throw new Error('Required field is missing');
         } else if (error.code === '22001') {
-            // String too long
             throw new Error('Input data is too long');
         } else if (error.message.includes('Validation failed') || 
                    error.message.includes('already have a group') ||
                    error.message.includes('Valid owner ID')) {
-            // Re-throw validation errors as-is
             throw error;
         } else {
-            // Generic error
             console.error('Database error in createGroup:', error);
             throw new Error('Group creation failed due to server error');
         }
     }
 };
 
-/**
- * Find a group by its ID
- * @param {number} groupId - The group's ID
- * @returns {object|null} Group object or null if not found
- */
 export const findGroupById = async (groupId) => {
     try {
         if (!groupId || typeof groupId !== 'number') {
@@ -146,11 +112,6 @@ export const findGroupById = async (groupId) => {
     }
 };
 
-/**
- * Find a group by ID including password hash (internal use only)
- * @param {number} groupId - The group's ID
- * @returns {object|null} Group object with password hash or null if not found
- */
 const findGroupByIdWithPassword = async (groupId) => {
     try {
         if (!groupId || typeof groupId !== 'number') {
@@ -180,12 +141,6 @@ const findGroupByIdWithPassword = async (groupId) => {
     }
 };
 
-/**
- * Check if a group name already exists for a specific owner
- * @param {string} name - Group name to check
- * @param {number} ownerId - Owner's user ID
- * @returns {boolean} True if group name exists for this owner
- */
 export const groupNameExistsForOwner = async (name, ownerId) => {
     try {
         if (!name || typeof name !== 'string') {
@@ -207,11 +162,6 @@ export const groupNameExistsForOwner = async (name, ownerId) => {
     }
 };
 
-/**
- * Check if a group exists by ID
- * @param {number} groupId - The group's ID
- * @returns {boolean} True if group exists
- */
 export const groupExists = async (groupId) => {
     try {
         const group = await findGroupById(groupId);
@@ -222,13 +172,6 @@ export const groupExists = async (groupId) => {
     }
 };
 
-/**
- * Delete a group (only owner can delete)
- * @param {number} groupId - The group's ID to delete
- * @param {number} ownerId - The owner's user ID (for authorization)
- * @returns {boolean} True if successfully deleted
- * @throws {Error} If validation fails or database error occurs
- */
 export const deleteGroup = async (groupId, ownerId) => {
     try {
         // Input validation
@@ -267,13 +210,6 @@ export const deleteGroup = async (groupId, ownerId) => {
     }
 };
 
-/**
- * Verify group join password
- * @param {number} groupId - The group's ID
- * @param {string} plainPassword - Plain text password to verify
- * @returns {boolean} True if password is correct or no password required
- * @throws {Error} If validation fails or database error occurs
- */
 export const verifyGroupPassword = async (groupId, plainPassword) => {
     try {
         // Input validation
@@ -318,12 +254,6 @@ export const verifyGroupPassword = async (groupId, plainPassword) => {
     }
 };
 
-/**
- * Get all groups owned by a specific user
- * @param {number} ownerId - The owner's user ID
- * @returns {Array} Array of group objects owned by the user
- * @throws {Error} If validation fails or database error occurs
- */
 export const getGroupsByOwner = async (ownerId) => {
     try {
         if (!ownerId || typeof ownerId !== 'number' || ownerId <= 0) {
@@ -356,7 +286,6 @@ export const getGroupsByOwner = async (ownerId) => {
         
         const result = await pool.query(query, [ownerId]);
         
-        console.log(`Found ${result.rows.length} groups owned by user ${ownerId}`);
         return result.rows;
         
     } catch (error) {

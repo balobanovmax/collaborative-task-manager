@@ -2,6 +2,44 @@ import { io } from 'socket.io-client';
 
 let socket = null;
 let connectionPromise = null;
+const subscribers = {};
+
+const getSubscriberSet = (event) => {
+    if (!subscribers[event]) {
+        subscribers[event] = new Set();
+    }
+    return subscribers[event];
+};
+
+const ensureSocketFanOut = (event) => {
+    if (!socket || socket[`_fanOut_${event}`]) {
+        return;
+    }
+
+    socket[`_fanOut_${event}`] = true;
+    socket.on(event, (data) => {
+        getSubscriberSet(event).forEach((callback) => {
+            try {
+                callback(data);
+            } catch (error) {
+                console.error(`Error in ${event} listener:`, error);
+            }
+        });
+    });
+};
+
+const subscribe = (event, callback) => {
+    if (!socket) {
+        return () => {};
+    }
+
+    ensureSocketFanOut(event);
+    getSubscriberSet(event).add(callback);
+
+    return () => {
+        getSubscriberSet(event).delete(callback);
+    };
+};
 
 export const connectSocket = () => {
     if (socket && socket.connected) {
@@ -77,79 +115,18 @@ export const leaveGroup = (groupId) => {
     }
 };
 
-export const onTaskCreated = (callback) => {
-    if (socket) {
-        socket.off('task-created');
-        socket.on('task-created', callback);
-    }
-};
-
-export const onTaskUpdated = (callback) => {
-    if (socket) {
-        socket.off('task-updated');
-        socket.on('task-updated', callback);
-    }
-};
-
-export const onTaskDeleted = (callback) => {
-    if (socket) {
-        socket.off('task-deleted');
-        socket.on('task-deleted', callback);
-    }
-};
-
-export const onTaskToggled = (callback) => {
-    if (socket) {
-        socket.off('task-toggled');
-        socket.on('task-toggled', callback);
-    }
-};
-
-export const onMemberJoined = (callback) => {
-    if (socket) {
-        socket.off('member-joined');
-        socket.on('member-joined', callback);
-    }
-};
-
-export const onMemberRemoved = (callback) => {
-    if (socket) {
-        socket.off('member-removed');
-        socket.on('member-removed', callback);
-    }
-};
-
-export const onGroupUpdated = (callback) => {
-    if (socket) {
-        socket.off('group-updated');
-        socket.on('group-updated', callback);
-    }
-};
-
-export const onMessageSent = (callback) => {
-    if (socket) {
-        socket.off('message-sent');
-        socket.on('message-sent', callback);
-    }
-};
-
-export const onChatCleared = (callback) => {
-    if (socket) {
-        socket.off('chat-cleared');
-        socket.on('chat-cleared', callback);
-    }
-};
+export const onTaskCreated = (callback) => subscribe('task-created', callback);
+export const onTaskUpdated = (callback) => subscribe('task-updated', callback);
+export const onTaskDeleted = (callback) => subscribe('task-deleted', callback);
+export const onTaskToggled = (callback) => subscribe('task-toggled', callback);
+export const onMemberJoined = (callback) => subscribe('member-joined', callback);
+export const onMemberRemoved = (callback) => subscribe('member-removed', callback);
+export const onGroupUpdated = (callback) => subscribe('group-updated', callback);
+export const onMessageSent = (callback) => subscribe('message-sent', callback);
+export const onChatCleared = (callback) => subscribe('chat-cleared', callback);
 
 export const removeAllListeners = () => {
-    if (socket) {
-        socket.off('task-created');
-        socket.off('task-updated');
-        socket.off('task-deleted');
-        socket.off('task-toggled');
-        socket.off('member-joined');
-        socket.off('member-removed');
-        socket.off('group-updated');
-        socket.off('message-sent');
-        socket.off('chat-cleared');
-    }
+    Object.values(subscribers).forEach((callbackSet) => {
+        callbackSet.clear();
+    });
 };

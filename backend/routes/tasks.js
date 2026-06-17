@@ -12,11 +12,6 @@ import { emitTaskCreated, emitTaskUpdated, emitTaskDeleted, emitTaskToggled } fr
 
 const router = express.Router();
 
-/**
- * POST /api/tasks - Create a new task
- * Body: { group_id, title, description, due_date }
- * Auth: Required (uses req.userId as creator)
- */
 router.post('/', requireAuth, async (req, res) => {
     try {
         const { group_id, title, description, due_date } = req.body;
@@ -62,10 +57,6 @@ router.post('/', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * GET /api/tasks/:id - Get single task details
- * Auth: Required (must be group member)
- */
 router.get('/:id', requireAuth, async (req, res) => {
     try {
         const taskId = parseInt(req.params.id);
@@ -108,11 +99,6 @@ router.get('/:id', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * PUT /api/tasks/:id - Update task
- * Body: { title, description, due_date } (any combination)
- * Auth: Required (creator or group owner only)
- */
 router.put('/:id', requireAuth, async (req, res) => {
     try {
         const taskId = parseInt(req.params.id);
@@ -172,10 +158,6 @@ router.put('/:id', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * DELETE /api/tasks/:id - Delete task
- * Auth: Required (creator or group owner only)
- */
 router.delete('/:id', requireAuth, async (req, res) => {
     try {
         const taskId = parseInt(req.params.id);
@@ -220,11 +202,6 @@ router.delete('/:id', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * GET /api/tasks/group/:groupId - Get all tasks for a group
- * Query params: ?completed=true/false&sortBy=created_at&sortOrder=DESC
- * Auth: Required (must be group member)
- */
 router.get('/group/:groupId', requireAuth, async (req, res) => {
     try {
         const groupId = parseInt(req.params.groupId);
@@ -288,10 +265,6 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
     }
 });
 
-/**
- * PATCH /api/tasks/:id/toggle - Toggle task completion
- * Auth: Required (any group member)
- */
 router.patch('/:id/toggle', requireAuth, async (req, res) => {
     try {
         const taskId = parseInt(req.params.id);

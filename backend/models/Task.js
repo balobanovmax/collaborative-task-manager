@@ -1,12 +1,5 @@
 import pool from '../config/database.js';
 
-/**
- * Validate task input data
- * @param {string} title - The task title
- * @param {string} [description] - The task description (optional)
- * @param {string|Date} [dueDate] - The due date (optional)
- * @returns {Object} Validation result with success flag and errors array
- */
 export const validateTaskInput = (title, description, dueDate) => {
     const errors = [];
     
@@ -68,15 +61,6 @@ export const validateTaskInput = (title, description, dueDate) => {
     };
 };
 
-/**
- * Create a new task in a group
- * @param {number} groupId - The ID of the group
- * @param {number} createdBy - The ID of the user creating the task
- * @param {string} title - The task title
- * @param {string} [description] - The task description (optional)
- * @param {string|Date} [dueDate] - The due date (optional)
- * @returns {Object} The created task object
- */
 export const createTask = async (groupId, createdBy, title, description, dueDate) => {
     try {
         // Validate required parameters
@@ -145,11 +129,6 @@ export const createTask = async (groupId, createdBy, title, description, dueDate
     }
 };
 
-/**
- * Find a task by its ID with creator and completer details
- * @param {number} taskId - The ID of the task to find
- * @returns {Object|null} Task object with user details or null if not found
- */
 export const findTaskById = async (taskId) => {
     try {
         // Validate task ID
@@ -222,16 +201,6 @@ export const findTaskById = async (taskId) => {
     }
 };
 
-/**
- * Get all tasks for a specific group
- * @param {number} groupId - The ID of the group
- * @param {Object} [options] - Optional filtering and sorting options
- * @param {boolean} [options.completedOnly] - Only return completed tasks
- * @param {boolean} [options.pendingOnly] - Only return pending tasks
- * @param {string} [options.sortBy] - Sort by 'created_at', 'due_date', 'title' (default: 'created_at')
- * @param {string} [options.sortOrder] - 'ASC' or 'DESC' (default: 'DESC')
- * @returns {Array} Array of task objects with creator details
- */
 export const getTasksByGroup = async (groupId, options = {}) => {
     try {
         // Validate group ID
@@ -353,16 +322,6 @@ export const getTasksByGroup = async (groupId, options = {}) => {
     }
 };
 
-/**
- * Update an existing task
- * @param {number} taskId - The ID of the task to update
- * @param {number} userId - The ID of the user making the update
- * @param {Object} updateData - The data to update
- * @param {string} [updateData.title] - New task title
- * @param {string} [updateData.description] - New task description
- * @param {string|Date} [updateData.due_date] - New due date
- * @returns {Object} Updated task object with creator details
- */
 export const updateTask = async (taskId, userId, updateData) => {
     try {
         // Validate task ID
@@ -541,12 +500,6 @@ export const updateTask = async (taskId, userId, updateData) => {
     }
 };
 
-/**
- * Delete a task
- * @param {number} taskId - The ID of the task to delete
- * @param {number} userId - The ID of the user requesting deletion
- * @returns {Object} Deleted task information
- */
 export const deleteTask = async (taskId, userId) => {
     try {
         // Validate task ID
@@ -630,12 +583,6 @@ export const deleteTask = async (taskId, userId) => {
     }
 };
 
-/**
- * Toggle task completion status
- * @param {number} taskId - The ID of the task to toggle
- * @param {number} userId - The ID of the user toggling completion
- * @returns {Object} Updated task with completion details
- */
 export const toggleTaskCompletion = async (taskId, userId) => {
     try {
         // Validate task ID

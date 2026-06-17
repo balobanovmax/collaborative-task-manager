@@ -1,10 +1,3 @@
--- Collaborative Task Manager Database Schema
--- Based on plan.txt requirements
-
--- Create database (run separately)
--- CREATE DATABASE collaborative_task_manager;
-
--- Users table
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -15,7 +8,6 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Groups table
 CREATE TABLE groups (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -26,7 +18,6 @@ CREATE TABLE groups (
     description TEXT
 );
 
--- Group members junction table (many-to-many relationship)
 CREATE TABLE group_members (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
@@ -34,7 +25,6 @@ CREATE TABLE group_members (
     PRIMARY KEY (user_id, group_id)
 );
 
--- Tasks table
 CREATE TABLE tasks (
     id SERIAL PRIMARY KEY,
     group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,
@@ -48,7 +38,6 @@ CREATE TABLE tasks (
     completed_by INTEGER REFERENCES users(id) ON DELETE SET NULL
 );
 
--- Messages table for group chat
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
     group_id INTEGER REFERENCES groups(id) ON DELETE CASCADE,

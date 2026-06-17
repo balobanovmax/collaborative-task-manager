@@ -93,7 +93,6 @@ export const createUser = async (username, email, password) => {
     }
 };
 
-// Function 2: Find user by email with better validation
 export const findUserByEmail = async (email) => {
     try {
         // Input validation
@@ -129,7 +128,6 @@ export const findUserByEmail = async (email) => {
     }
 };
 
-// Function 3: Find user by ID with validation
 export const findUserById = async (userId) => {
     try {
         // Input validation
@@ -163,7 +161,6 @@ export const findUserById = async (userId) => {
     }
 };
 
-// Enhanced password verification with rate limiting consideration
 export const verifyUserPassword = async (email, plainPassword) => {
     try {
         // Input validation
@@ -202,7 +199,6 @@ export const verifyUserPassword = async (email, plainPassword) => {
     }
 };
 
-// Utility function to check if email exists (for registration)
 export const emailExists = async (email) => {
     try {
         const user = await findUserByEmail(email);
@@ -230,11 +226,6 @@ export const usernameExists = async (username) => {
     }
 };
 
-/**
- * Get user's full profile (private - for own profile view)
- * @param {number} userId - The ID of the user
- * @returns {Object|null} User profile object with private info or null if not found
- */
 export const getUserProfile = async (userId) => {
     try {
         // Validate input
@@ -270,14 +261,6 @@ export const getUserProfile = async (userId) => {
     }
 };
 
-/**
- * Update user's profile information
- * @param {number} userId - The ID of the user to update
- * @param {Object} profileData - Object containing profile fields to update
- * @param {string} [profileData.bio] - User's bio (optional)
- * @param {string} [profileData.profile_picture_url] - URL to user's profile picture (optional)
- * @returns {Object} Updated user profile object
- */
 export const updateUserProfile = async (userId, profileData) => {
     try {
         // Validate user ID
@@ -369,11 +352,6 @@ export const updateUserProfile = async (userId, profileData) => {
     }
 };
 
-/**
- * Get user's public profile (for viewing other users)
- * @param {number} userId - The ID of the user
- * @returns {Object|null} User public profile object (no email) or null if not found
- */
 export const getUserPublicProfile = async (userId) => {
     try {
         // Validate input

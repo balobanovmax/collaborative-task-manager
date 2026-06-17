@@ -1,9 +1,3 @@
-/* ===================================
-   COLOR SCHEME TEST
-   Clean & Simple Design
-   =================================== */
-
-/* Global Styles */
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
   background-color: #FFFFFF;
@@ -34,10 +28,6 @@ body {
   border-bottom: 2px solid #E0E0E0;
   padding-bottom: 10px;
 }
-
-/* ===================================
-   BUTTONS
-   =================================== */
 
 .button-group {
   display: flex;
@@ -92,10 +82,6 @@ body {
 .btn-secondary:hover {
   background-color: #F5F5F5;
 }
-
-/* ===================================
-   FORMS
-   =================================== */
 
 .form-container {
   background-color: white;
@@ -191,10 +177,6 @@ body {
   background-color: #F5F5F5;
 }
 
-/* ===================================
-   CARDS (Tasks, Groups)
-   =================================== */
-
 .card {
   background-color: white;
   padding: 20px;
@@ -222,7 +204,6 @@ body {
   margin-top: 15px;
 }
 
-/* Task States */
 .card-completed {
   background-color: #E8F5E9;
   border-left: 4px solid #5CB85C;
@@ -232,10 +213,6 @@ body {
   background-color: #E3F2FD;
   border-left: 4px solid #4A90E2;
 }
-
-/* ===================================
-   TEXT STYLES
-   =================================== */
 
 .text-heading {
   font-size: 32px;
@@ -259,10 +236,6 @@ body {
   font-size: 14px;
   color: #999999;
 }
-
-/* ===================================
-   STATUS MESSAGES
-   =================================== */
 
 .message {
   padding: 15px;

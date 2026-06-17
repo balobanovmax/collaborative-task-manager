@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from './GroupView.module.css';
 import Navbar from '../components/common/Navbar';
@@ -18,8 +18,8 @@ import {
   onMemberJoined,
   onMemberRemoved,
   onMessageSent,
-  onGroupUpdated,
-  removeAllListeners
+  onChatCleared,
+  onGroupUpdated
 } from '../services/socket';
 
 function GroupView() {
@@ -37,7 +37,9 @@ function GroupView() {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, memberId: null, memberName: '' });
   const [removedMessage, setRemovedMessage] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [hasNewMessages, setHasNewMessages] = useState(false);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const isChatOpenRef = useRef(false);
+  const currentUserIdRef = useRef(currentUser?.id);
   const [isMembersExpanded, setIsMembersExpanded] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
@@ -85,8 +87,21 @@ function GroupView() {
   }, [fetchGroupData]);
 
   useEffect(() => {
+    isChatOpenRef.current = isChatOpen;
+  }, [isChatOpen]);
+
+  useEffect(() => {
+    currentUserIdRef.current = currentUser?.id;
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    setUnreadMessageCount(0);
+  }, [groupId]);
+
+  useEffect(() => {
     let mounted = true;
     const groupIdInt = parseInt(groupId);
+    const unsubscribers = [];
 
     const setupSocket = async () => {
       await connectSocket();
@@ -95,7 +110,7 @@ function GroupView() {
       
       joinGroup(groupIdInt);
 
-      onTaskCreated((data) => {
+      unsubscribers.push(onTaskCreated((data) => {
         if (mounted) {
           setTasks(prevTasks => {
             const exists = prevTasks.some(t => t.id === data.task.id);
@@ -103,9 +118,9 @@ function GroupView() {
             return [...prevTasks, data.task];
           });
         }
-      });
+      }));
 
-      onTaskUpdated((data) => {
+      unsubscribers.push(onTaskUpdated((data) => {
         if (mounted) {
           setTasks(prevTasks => 
             prevTasks.map(task => 
@@ -113,17 +128,17 @@ function GroupView() {
             )
           );
         }
-      });
+      }));
 
-      onTaskDeleted((data) => {
+      unsubscribers.push(onTaskDeleted((data) => {
         if (mounted) {
           setTasks(prevTasks => 
             prevTasks.filter(task => task.id !== data.taskId)
           );
         }
-      });
+      }));
 
-      onTaskToggled((data) => {
+      unsubscribers.push(onTaskToggled((data) => {
         if (mounted) {
           setTasks(prevTasks => 
             prevTasks.map(task => 
@@ -131,9 +146,9 @@ function GroupView() {
             )
           );
         }
-      });
+      }));
 
-      onMemberJoined((data) => {
+      unsubscribers.push(onMemberJoined((data) => {
         if (mounted) {
           setMembers(prevMembers => {
             const exists = prevMembers.some(m => m.user_id === data.member.user_id);
@@ -141,11 +156,11 @@ function GroupView() {
             return [...prevMembers, data.member];
           });
         }
-      });
+      }));
 
-      onMemberRemoved((data) => {
+      unsubscribers.push(onMemberRemoved((data) => {
         if (mounted) {
-          if (data.userId === currentUser?.id) {
+          if (data.userId === currentUserIdRef.current) {
             setRemovedMessage('You have been removed from this group');
             setTimeout(() => {
               navigate('/my-groups');
@@ -156,24 +171,39 @@ function GroupView() {
             );
           }
         }
-      });
+      }));
 
-      onMessageSent((data) => {
-        if (mounted && data.message.user_id !== currentUser?.id) {
-          setIsChatOpen(prev => {
-            if (!prev) {
-              setHasNewMessages(true);
-            }
-            return prev;
-          });
+      unsubscribers.push(onMessageSent((data) => {
+        if (!mounted || isChatOpenRef.current) {
+          return;
         }
-      });
 
-      onGroupUpdated(() => {
+        const messageGroupId = Number(data.message.group_id);
+        const messageUserId = Number(data.message.user_id);
+        const viewerUserId = Number(currentUserIdRef.current);
+
+        if (messageGroupId !== groupIdInt) {
+          return;
+        }
+
+        if (messageUserId === viewerUserId) {
+          return;
+        }
+
+        setUnreadMessageCount(prev => prev + 1);
+      }));
+
+      unsubscribers.push(onChatCleared((data) => {
+        if (mounted && !isChatOpenRef.current && Number(data.groupId) === groupIdInt) {
+          setUnreadMessageCount(0);
+        }
+      }));
+
+      unsubscribers.push(onGroupUpdated(() => {
         if (mounted) {
           fetchGroupData(false);
         }
-      });
+      }));
     };
 
     setupSocket();
@@ -181,9 +211,9 @@ function GroupView() {
     return () => {
       mounted = false;
       leaveGroup(groupIdInt);
-      removeAllListeners();
+      unsubscribers.forEach((unsubscribe) => unsubscribe());
     };
-  }, [groupId, currentUser?.id, navigate]);
+  }, [groupId, fetchGroupData, navigate]);
 
   const handleBack = () => {
     navigate('/my-groups');
@@ -387,13 +417,18 @@ function GroupView() {
               )}
             </div>
             <button
-              className={`${styles.chatButton} ${hasNewMessages ? styles.chatButtonNotification : ''}`}
+              className={`${styles.chatButton} ${unreadMessageCount > 0 ? styles.chatButtonNotification : ''}`}
               onClick={() => {
                 setIsChatOpen(true);
-                setHasNewMessages(false);
+                setUnreadMessageCount(0);
               }}
             >
-              {hasNewMessages ? 'New Messages!' : 'Enter Chat'}
+              Enter Chat
+              {unreadMessageCount > 0 && (
+                <span className={styles.chatBadge}>
+                  {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                </span>
+              )}
             </button>
           </div>
 
