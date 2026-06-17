@@ -9,7 +9,22 @@ import {
     toggleTaskCompletion 
 } from '../models/Task.js';
 import { createTaskComment, getCommentsByTask } from '../models/TaskComment.js';
-import { emitTaskCreated, emitTaskUpdated, emitTaskDeleted, emitTaskToggled, emitTaskCommentCreated } from '../utils/socket.js';
+import {
+    createTaskAttachment,
+    getAttachmentsByTask,
+    deleteTaskAttachment
+} from '../models/TaskAttachment.js';
+import { uploadTaskAttachment } from '../middleware/uploadTaskAttachment.js';
+import { getTaskAttachmentPublicPath, deleteTaskAttachmentFile } from '../utils/taskAttachmentFiles.js';
+import {
+    emitTaskCreated,
+    emitTaskUpdated,
+    emitTaskDeleted,
+    emitTaskToggled,
+    emitTaskCommentCreated,
+    emitTaskAttachmentAdded,
+    emitTaskAttachmentDeleted
+} from '../utils/socket.js';
 
 const router = express.Router();
 
@@ -46,6 +61,136 @@ router.post('/', requireAuth, async (req, res) => {
         if (error.message.includes('not found') || error.message.includes('does not exist')) {
             statusCode = 404;
         } else if (error.message.includes('not a member') || error.message.includes('permission')) {
+            statusCode = 403;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.get('/:id/attachments', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id);
+
+        if (isNaN(taskId) || taskId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid task ID'
+            });
+        }
+
+        const attachments = await getAttachmentsByTask(taskId, req.userId);
+
+        res.json({
+            success: true,
+            data: { attachments }
+        });
+    } catch (error) {
+        console.error('Error fetching task attachments:', error);
+
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('must be a member')) {
+            statusCode = 403;
+        }
+
+        res.status(statusCode).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+router.post('/:id/attachments', requireAuth, (req, res) => {
+    uploadTaskAttachment.single('attachment')(req, res, async (uploadError) => {
+        if (uploadError) {
+            return res.status(400).json({
+                success: false,
+                message: uploadError.message || 'Failed to upload attachment'
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Attachment file is required'
+            });
+        }
+
+        const taskId = parseInt(req.params.id);
+
+        if (isNaN(taskId) || taskId <= 0) {
+            deleteTaskAttachmentFile(getTaskAttachmentPublicPath(req.file.filename));
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid task ID'
+            });
+        }
+
+        try {
+            const attachment = await createTaskAttachment(taskId, req.userId, req.file);
+            const task = await findTaskById(taskId);
+
+            emitTaskAttachmentAdded(task.group_id, taskId, attachment);
+
+            res.status(201).json({
+                success: true,
+                message: 'Attachment uploaded successfully',
+                data: { attachment }
+            });
+        } catch (error) {
+            deleteTaskAttachmentFile(getTaskAttachmentPublicPath(req.file.filename));
+
+            console.error('Error saving task attachment:', error);
+
+            let statusCode = 400;
+            if (error.message.includes('not found')) {
+                statusCode = 404;
+            } else if (error.message.includes('must be a member')) {
+                statusCode = 403;
+            }
+
+            res.status(statusCode).json({
+                success: false,
+                message: error.message || 'Failed to save attachment'
+            });
+        }
+    });
+});
+
+router.delete('/:id/attachments/:attachmentId', requireAuth, async (req, res) => {
+    try {
+        const taskId = parseInt(req.params.id);
+        const attachmentId = parseInt(req.params.attachmentId);
+
+        if (isNaN(taskId) || taskId <= 0 || isNaN(attachmentId) || attachmentId <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid task ID or attachment ID'
+            });
+        }
+
+        const result = await deleteTaskAttachment(attachmentId, req.userId);
+        const task = await findTaskById(taskId);
+
+        emitTaskAttachmentDeleted(task.group_id, taskId, result.id);
+
+        res.json({
+            success: true,
+            message: 'Attachment deleted successfully',
+            data: result
+        });
+    } catch (error) {
+        console.error('Error deleting task attachment:', error);
+
+        let statusCode = 400;
+        if (error.message.includes('not found')) {
+            statusCode = 404;
+        } else if (error.message.includes('must be a member') || error.message.includes('can only delete')) {
             statusCode = 403;
         }
 

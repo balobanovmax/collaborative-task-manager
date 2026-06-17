@@ -212,6 +212,27 @@ export const taskAPI = {
   addComment: async (taskId, content) => {
     const response = await api.post(`/tasks/${taskId}/comments`, { content });
     return response.data;
+  },
+
+  getAttachments: async (taskId) => {
+    const response = await api.get(`/tasks/${taskId}/attachments`);
+    return response.data;
+  },
+
+  uploadAttachment: async (taskId, file) => {
+    const formData = new FormData();
+    formData.append('attachment', file);
+    const response = await api.post(`/tasks/${taskId}/attachments`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
+  },
+
+  deleteAttachment: async (taskId, attachmentId) => {
+    const response = await api.delete(`/tasks/${taskId}/attachments/${attachmentId}`);
+    return response.data;
   }
 };
 

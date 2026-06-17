@@ -71,3 +71,11 @@ export const emitTaskCommentCreated = (groupId, taskId, comment) => {
     emitToGroup(groupId, 'task-comment-created', { taskId, comment });
 };
 
+export const emitTaskAttachmentAdded = (groupId, taskId, attachment) => {
+    emitToGroup(groupId, 'task-attachment-added', { taskId, attachment });
+};
+
+export const emitTaskAttachmentDeleted = (groupId, taskId, attachmentId) => {
+    emitToGroup(groupId, 'task-attachment-deleted', { taskId, attachmentId });
+};
+

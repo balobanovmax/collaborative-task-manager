@@ -139,6 +139,8 @@ export const onChatCleared = (callback) => subscribe('chat-cleared', callback);
 export const onNotificationReceived = (callback) => subscribe('notification-received', callback);
 export const onJoinRequestUpdated = (callback) => subscribe('join-request-updated', callback);
 export const onTaskCommentCreated = (callback) => subscribe('task-comment-created', callback);
+export const onTaskAttachmentAdded = (callback) => subscribe('task-attachment-added', callback);
+export const onTaskAttachmentDeleted = (callback) => subscribe('task-attachment-deleted', callback);
 
 export const removeAllListeners = () => {
     Object.values(subscribers).forEach((callbackSet) => {

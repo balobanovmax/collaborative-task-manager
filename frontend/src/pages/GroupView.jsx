@@ -4,6 +4,7 @@ import styles from './GroupView.module.css';
 import Navbar from '../components/common/Navbar';
 import TaskManagementModal from '../components/tasks/TaskManagementModal';
 import TaskCommentThread from '../components/tasks/TaskCommentThread';
+import TaskAttachments from '../components/tasks/TaskAttachments';
 import ConfirmModal from '../components/common/ConfirmModal';
 import MemberProfileModal from '../components/groups/MemberProfileModal';
 import ChatPanel from '../components/chat/ChatPanel';
@@ -24,7 +25,8 @@ import {
   onChatCleared,
   onGroupUpdated,
   onJoinRequestUpdated,
-  onTaskCommentCreated
+  onTaskCommentCreated,
+  onTaskAttachmentAdded
 } from '../services/socket';
 
 const getTaskAssignee = (task) => {
@@ -307,6 +309,24 @@ function GroupView() {
           )
         );
       }));
+
+      unsubscribers.push(onTaskAttachmentAdded((data) => {
+        if (!mounted) {
+          return;
+        }
+
+        if (Number(data.attachment.user_id) === Number(currentUserIdRef.current)) {
+          return;
+        }
+
+        setTasks((prevTasks) =>
+          prevTasks.map((task) =>
+            Number(task.id) === Number(data.taskId)
+              ? { ...task, attachment_count: (task.attachment_count || 0) + 1 }
+              : task
+          )
+        );
+      }));
     };
 
     setupSocket();
@@ -336,6 +356,16 @@ function GroupView() {
       prevTasks.map((task) =>
         Number(task.id) === Number(taskId)
           ? { ...task, comment_count: (task.comment_count || 0) + 1 }
+          : task
+      )
+    );
+  };
+
+  const handleTaskAttachmentAdded = (taskId) => {
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        Number(task.id) === Number(taskId)
+          ? { ...task, attachment_count: (task.attachment_count || 0) + 1 }
           : task
       )
     );
@@ -792,6 +822,14 @@ function GroupView() {
                         groupId={parseInt(groupId)}
                         initialCount={task.comment_count || 0}
                         onCommentAdded={handleTaskCommentAdded}
+                      />
+
+                      <TaskAttachments
+                        taskId={task.id}
+                        initialCount={task.attachment_count || 0}
+                        taskCreatedBy={task.created_by}
+                        groupOwnerId={group?.owner_id}
+                        onAttachmentAdded={handleTaskAttachmentAdded}
                       />
                     </div>
                     );
