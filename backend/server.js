@@ -15,7 +15,9 @@ import userRoutes from './routes/users.js';
 import taskRoutes from './routes/tasks.js';
 import messageRoutes from './routes/messages.js';
 import notificationRoutes from './routes/notifications.js';
+import webrtcRoutes from './routes/webrtc.js';
 import { startDueDateNotificationScheduler } from './utils/taskNotifications.js';
+import { isTurnConfigured } from './config/iceServers.js';
 import { setSocketIO } from './utils/socket.js';
 import { registerVoiceHandlers } from './utils/voiceRooms.js';
 
@@ -31,10 +33,29 @@ const isLocalDevOrigin = (origin) => {
     return /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+)(:\d+)?$/.test(origin);
 };
 
+const getAllowedOrigins = () => (
+    (process.env.FRONTEND_URL || '')
+        .split(',')
+        .map((entry) => entry.trim())
+        .filter(Boolean)
+);
+
+const isAllowedOrigin = (origin) => {
+    if (!origin) {
+        return true;
+    }
+
+    if (isLocalDevOrigin(origin)) {
+        return true;
+    }
+
+    return getAllowedOrigins().includes(origin);
+};
+
 const io = new Server(httpServer, {
     cors: {
         origin: (origin, callback) => {
-            callback(null, isLocalDevOrigin(origin));
+            callback(null, isAllowedOrigin(origin));
         },
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
         credentials: true
@@ -49,7 +70,12 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
-app.use(cors());
+app.use(cors({
+    origin: (origin, callback) => {
+        callback(null, !origin || isAllowedOrigin(origin));
+    },
+    credentials: true
+}));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
@@ -59,6 +85,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/webrtc', webrtcRoutes);
 
 app.get('/', (req, res) => {
     res.send('Hello World');
@@ -134,5 +161,7 @@ registerVoiceHandlers(io);
 
 httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    console.log(`Allowed frontend origins: ${getAllowedOrigins().join(', ') || '(local dev only)'}`);
+    console.log(`TURN configured: ${isTurnConfigured() ? 'yes' : 'no (STUN only — voice may fail across networks)'}`);
     startDueDateNotificationScheduler();
 });

@@ -1,10 +1,31 @@
 import { getSocket, connectSocket } from './socket';
+import { webrtcAPI } from './api';
 
-const RTC_CONFIG = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
-    ]
+const DEFAULT_ICE_SERVERS = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+];
+
+const DEFAULT_RTC_CONFIG = {
+    iceServers: DEFAULT_ICE_SERVERS,
+    iceTransportPolicy: 'all'
+};
+
+const fetchRtcConfig = async () => {
+    try {
+        const data = await webrtcAPI.getIceServers();
+        if (!data?.iceServers?.length) {
+            return DEFAULT_RTC_CONFIG;
+        }
+
+        return {
+            iceServers: data.iceServers,
+            iceTransportPolicy: data.iceTransportPolicy || 'all'
+        };
+    } catch (error) {
+        console.warn('Failed to fetch ICE servers, using STUN defaults:', error.message);
+        return DEFAULT_RTC_CONFIG;
+    }
 };
 
 const AUDIO_NEGOTIATION_OPTIONS = { voiceActivityDetection: false };
@@ -74,6 +95,7 @@ export const createVoiceChatSession = ({
     let micEnabled = false;
     let cameraEnabled = false;
     let handlers = null;
+    let rtcConfig = DEFAULT_RTC_CONFIG;
 
     const isPolitePeer = (remoteUserId) => Number(user.id) > Number(remoteUserId);
 
@@ -189,7 +211,7 @@ export const createVoiceChatSession = ({
             return existing;
         }
 
-        const pc = new RTCPeerConnection(RTC_CONFIG);
+        const pc = new RTCPeerConnection(rtcConfig);
 
         if (localStream) {
             localStream.getTracks().forEach((track) => {
@@ -336,6 +358,14 @@ export const createVoiceChatSession = ({
 
         if (!socket) {
             throw new Error('Unable to connect to voice server.');
+        }
+
+        rtcConfig = await fetchRtcConfig();
+        if (import.meta.env.DEV) {
+            console.log('Voice RTC config loaded:', {
+                iceServerCount: rtcConfig.iceServers?.length || 0,
+                iceTransportPolicy: rtcConfig.iceTransportPolicy
+            });
         }
 
         if (!navigator.mediaDevices?.getUserMedia) {

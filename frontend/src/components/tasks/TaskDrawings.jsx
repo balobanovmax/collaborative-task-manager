@@ -6,6 +6,7 @@ import { getUser } from '../../utils/auth';
 import UserAvatar from '../common/UserAvatar';
 import ConfirmModal from '../common/ConfirmModal';
 import DrawingCanvasModal from './DrawingCanvasModal';
+import { resolveMediaUrl } from '../../utils/backendUrl';
 
 function TaskDrawings({
   taskId,
@@ -207,16 +208,18 @@ function TaskDrawings({
             <p className={styles.statusText}>No drawings yet. Click Make Drawing to sketch one.</p>
           ) : (
             <div className={styles.grid}>
-              {drawings.map((drawing) => (
+              {drawings.map((drawing) => {
+                const drawingUrl = resolveMediaUrl(drawing.file_path);
+                return (
                 <div key={drawing.id} className={styles.card}>
                   <a
-                    href={drawing.file_path}
+                    href={drawingUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.previewLink}
                   >
                     <img
-                      src={drawing.file_path}
+                      src={drawingUrl}
                       alt={drawing.title}
                       className={styles.previewImage}
                     />
@@ -237,7 +240,7 @@ function TaskDrawings({
                     </div>
                     <div className={styles.cardActions}>
                       <a
-                        href={drawing.file_path}
+                        href={drawingUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={styles.actionLink}
@@ -245,7 +248,7 @@ function TaskDrawings({
                         View
                       </a>
                       <a
-                        href={drawing.file_path}
+                        href={drawingUrl}
                         download={`${drawing.title}.png`}
                         className={styles.actionLink}
                       >
@@ -264,7 +267,8 @@ function TaskDrawings({
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

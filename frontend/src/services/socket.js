@@ -1,4 +1,5 @@
 import { io } from 'socket.io-client';
+import { getSocketUrl } from '../utils/backendUrl';
 
 let socket = null;
 let connectionPromise = null;
@@ -51,16 +52,20 @@ export const connectSocket = () => {
     }
 
     connectionPromise = new Promise((resolve) => {
-        console.log('Connecting to socket...');
+        const socketUrl = getSocketUrl();
+        console.log('Connecting to socket...', socketUrl || '(same origin)');
 
-        socket = io({
+        const socketOptions = {
             transports: ['polling', 'websocket'],
             reconnection: true,
             reconnectionAttempts: 10,
             reconnectionDelay: 1000,
             timeout: 20000,
-            path: '/socket.io'
-        });
+            path: '/socket.io',
+            withCredentials: true
+        };
+
+        socket = socketUrl ? io(socketUrl, socketOptions) : io(socketOptions);
 
         socket.on('connect', () => {
             console.log('Socket connected:', socket.id);

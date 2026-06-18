@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/backendUrl';
+
 const api = axios.create({
-  baseURL: '/api', 
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
@@ -383,6 +385,13 @@ export const messageAPI = {
         'Content-Type': 'multipart/form-data'
       }
     });
+    return response.data;
+  }
+};
+
+export const webrtcAPI = {
+  getIceServers: async () => {
+    const response = await api.get('/webrtc/ice-servers');
     return response.data;
   }
 };

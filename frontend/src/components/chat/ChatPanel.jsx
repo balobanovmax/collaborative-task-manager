@@ -14,6 +14,7 @@ import {
   getExtensionForMimeType,
   formatVoiceDuration
 } from '../../utils/voiceMessage';
+import { resolveMediaUrl } from '../../utils/backendUrl';
 import { formatTypingLabel } from '../../utils/chatTyping';
 import UserAvatar from '../common/UserAvatar';
 import ResizableWindow from '../common/ResizableWindow';
@@ -611,7 +612,7 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner = false, members = [], zI
                         <div className={styles.messageContent}>
                           {msg.message_type === 'voice' && msg.voice_url ? (
                             <VoiceMessagePlayer
-                              src={msg.voice_url}
+                              src={resolveMediaUrl(msg.voice_url)}
                               durationSeconds={msg.voice_duration_seconds}
                               isOwn={isOwn}
                             />

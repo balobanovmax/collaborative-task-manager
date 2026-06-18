@@ -5,6 +5,7 @@ import { onTaskAttachmentAdded, onTaskAttachmentDeleted } from '../../services/s
 import { getUser } from '../../utils/auth';
 import UserAvatar from '../common/UserAvatar';
 import ConfirmModal from '../common/ConfirmModal';
+import { resolveMediaUrl } from '../../utils/backendUrl';
 
 const formatFileSize = (bytes) => {
   if (bytes < 1024) return `${bytes} B`;
@@ -265,7 +266,7 @@ function TaskAttachments({
                   <div className={styles.itemActions}>
                     {canPreviewInBrowser(attachment.mime_type) && (
                       <a
-                        href={attachment.file_path}
+                        href={resolveMediaUrl(attachment.file_path)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className={styles.actionLink}
@@ -274,7 +275,7 @@ function TaskAttachments({
                       </a>
                     )}
                     <a
-                      href={attachment.file_path}
+                      href={resolveMediaUrl(attachment.file_path)}
                       download={attachment.original_filename}
                       className={styles.actionLink}
                     >
