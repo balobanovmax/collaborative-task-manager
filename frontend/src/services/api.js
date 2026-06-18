@@ -74,6 +74,11 @@ export const userAPI = {
       new_password: newPassword
     });
     return response.data;
+  },
+
+  getDashboard: async () => {
+    const response = await api.get('/users/dashboard');
+    return response.data;
   }
 };
 

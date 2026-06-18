@@ -1,0 +1,86 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-heavy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 16px;
+}
+
+.panel {
+  width: 100%;
+  max-width: 500px;
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 40px var(--shadow-md);
+  overflow: hidden;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-page);
+  flex-shrink: 0;
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  color: var(--text-subtle);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.closeButton:hover {
+  color: var(--text-primary);
+}
+
+.panelBody {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.loadingMessage {
+  margin: 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .overlay {
+    padding: 12px;
+  }
+
+  .panel {
+    max-height: calc(100dvh - 24px);
+  }
+
+  .panelHeader {
+    padding: 16px 18px;
+  }
+
+  .panelBody {
+    padding: 20px 18px;
+  }
+}

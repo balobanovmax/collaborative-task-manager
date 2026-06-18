@@ -4,6 +4,8 @@ import { uploadAvatar } from '../middleware/uploadAvatar.js';
 import { getUserProfile, updateUserProfile, getUserPublicProfile, changeUserPassword } from '../models/User.js';
 import { getUserGroups } from '../models/GroupMember.js';
 import { getGroupsByOwner } from '../models/Group.js';
+import { getDashboardSummary } from '../models/Dashboard.js';
+import { processDueDateNotifications } from '../utils/taskNotifications.js';
 import { deleteAvatarFile, getAvatarPublicPath } from '../utils/avatarFiles.js';
 
 const router = express.Router();
@@ -208,6 +210,28 @@ router.delete('/profile/avatar', requireAuth, async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message || 'Failed to remove avatar'
+        });
+    }
+});
+
+router.get('/dashboard', requireAuth, async (req, res) => {
+    try {
+        processDueDateNotifications().catch((error) => {
+            console.error('Due date notification check failed:', error);
+        });
+
+        const dashboard = await getDashboardSummary(req.userId);
+
+        res.json({
+            success: true,
+            data: dashboard
+        });
+    } catch (error) {
+        console.error('Error fetching dashboard:', error);
+
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch dashboard'
         });
     }
 });

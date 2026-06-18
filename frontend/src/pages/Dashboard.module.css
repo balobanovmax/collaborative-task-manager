@@ -16,8 +16,8 @@
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.2s;
-  max-width: 1200px;
-  margin: 0 auto 30px;
+  max-width: 720px;
+  margin: 0 auto 24px;
   display: block;
 }
 
@@ -26,47 +26,220 @@
 }
 
 .content {
-  max-width: 1200px;
+  max-width: 720px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 24px;
 }
 
 .welcomeSection {
-  margin-bottom: 40px;
-  text-align: center;
+  text-align: left;
 }
 
 .title {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 600;
   color: var(--text-primary);
+  margin: 0 0 6px;
+}
+
+.subtitle {
   margin: 0;
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.loadingMessage,
+.errorMessage,
+.emptyText {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.errorMessage {
+  color: var(--danger-hover);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  padding: 12px 14px;
+  border-radius: 6px;
+}
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.statCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 12px;
+  text-align: center;
+}
+
+.statCardAlert {
+  border-color: var(--danger);
+}
+
+.statValue {
+  display: block;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.statLabel {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 18px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sectionTitle {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sectionHeader .sectionTitle {
+  margin-bottom: 0;
+}
+
+.subsection + .subsection {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.subsectionTitle {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+}
+
+.linkButton:hover {
+  text-decoration: underline;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.taskRow {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.taskRow .listItem {
+  flex: 1;
+  min-width: 0;
+}
+
+.taskRow > :last-child {
+  align-self: center;
+}
+
+.listItem {
+  width: 100%;
+  text-align: left;
+  background: var(--bg-page);
+  border: 1px solid var(--border-light);
+  border-radius: 4px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.listItem:hover {
+  border-color: var(--primary);
+}
+
+.listItemTitle {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.listItemMeta {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.4;
 }
 
 .actionsGrid {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 40px;
-  justify-content: center;
+  gap: 10px;
+}
+
+.actionButton,
+.actionButtonSecondary {
+  padding: 10px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
 }
 
 .actionButton {
   background-color: var(--primary);
   color: var(--text-inverse);
-  padding: 12px 24px;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: background-color 0.2s;
 }
 
 .actionButton:hover {
   background-color: var(--primary-hover);
+}
+
+.actionButtonSecondary {
+  background-color: var(--bg-surface);
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
+}
+
+.actionButtonSecondary:hover {
+  background-color: var(--bg-page);
 }
 
 .notification {
@@ -103,19 +276,19 @@
   }
 
   .title {
-    font-size: 26px;
+    font-size: 24px;
+  }
+
+  .statsRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .actionsGrid {
     flex-direction: column;
-    width: 100%;
-    max-width: 320px;
   }
 
-  .actionButton {
+  .actionButton,
+  .actionButtonSecondary {
     width: 100%;
   }
 }
-
-
-

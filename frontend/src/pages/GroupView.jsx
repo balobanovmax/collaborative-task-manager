@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import styles from './GroupView.module.css';
 import Navbar from '../components/common/Navbar';
 import TaskManagementModal from '../components/tasks/TaskManagementModal';
+import TaskQuickActionModal from '../components/tasks/TaskQuickActionModal';
 import TaskKanbanBoard from '../components/tasks/TaskKanbanBoard';
 import TaskListItem from '../components/tasks/TaskListItem';
 import ConfirmModal from '../components/common/ConfirmModal';
@@ -72,6 +73,7 @@ function GroupView() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [taskQuickAction, setTaskQuickAction] = useState({ mode: null, task: null });
   const [successMessage, setSuccessMessage] = useState('');
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, memberId: null, memberName: '' });
   const [removedMessage, setRemovedMessage] = useState('');
@@ -479,6 +481,22 @@ function GroupView() {
     setTimeout(() => {
       setSuccessMessage('');
     }, 3000);
+  };
+
+  const openTaskEdit = (task) => {
+    setTaskQuickAction({ mode: 'edit', task });
+  };
+
+  const openTaskDelete = (task) => {
+    setTaskQuickAction({ mode: 'delete', task });
+  };
+
+  const closeTaskQuickAction = () => {
+    setTaskQuickAction({ mode: null, task: null });
+  };
+
+  const handleQuickTaskActionSuccess = () => {
+    fetchGroupData(false);
   };
 
   const handleTaskCommentAdded = (taskId) => {
@@ -1033,6 +1051,8 @@ function GroupView() {
                   onPriorityChange={handleTaskPriorityChange}
                   getTaskAssignee={getTaskAssignee}
                   isUpdating={isUpdatingTaskStatus}
+                  onEdit={openTaskEdit}
+                  onDelete={openTaskDelete}
                 />
               ) : (
                 <div className={styles.tasksList}>
@@ -1054,6 +1074,8 @@ function GroupView() {
                       onAttachmentAdded={handleTaskAttachmentAdded}
                       onDrawingAdded={handleTaskDrawingAdded}
                       onSubtaskUpdated={handleSubtaskUpdated}
+                      onEdit={openTaskEdit}
+                      onDelete={openTaskDelete}
                     />
                   ))}
                 </div>
@@ -1075,6 +1097,15 @@ function GroupView() {
           tasks={tasks}
           members={members}
           onTaskUpdated={handleTaskUpdated}
+        />
+
+        <TaskQuickActionModal
+          isOpen={Boolean(taskQuickAction.mode && taskQuickAction.task)}
+          mode={taskQuickAction.mode}
+          task={taskQuickAction.task}
+          members={members}
+          onClose={closeTaskQuickAction}
+          onSuccess={handleQuickTaskActionSuccess}
         />
 
         <LeaveGroupModal

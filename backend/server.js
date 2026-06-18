@@ -15,6 +15,7 @@ import userRoutes from './routes/users.js';
 import taskRoutes from './routes/tasks.js';
 import messageRoutes from './routes/messages.js';
 import notificationRoutes from './routes/notifications.js';
+import { startDueDateNotificationScheduler } from './utils/taskNotifications.js';
 import { setSocketIO } from './utils/socket.js';
 import { registerVoiceHandlers } from './utils/voiceRooms.js';
 
@@ -133,4 +134,5 @@ registerVoiceHandlers(io);
 
 httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
+    startDueDateNotificationScheduler();
 });

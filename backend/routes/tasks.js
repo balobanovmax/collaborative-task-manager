@@ -43,6 +43,13 @@ import {
     emitTaskDrawingAdded,
     emitTaskDrawingDeleted
 } from '../utils/socket.js';
+import { notifyTaskAssigned } from '../utils/taskNotifications.js';
+import pool from '../config/database.js';
+
+const fetchUsername = async (userId) => {
+    const result = await pool.query('SELECT username FROM users WHERE id = $1', [userId]);
+    return result.rows[0]?.username || 'Someone';
+};
 
 const router = express.Router();
 
@@ -60,6 +67,17 @@ router.post('/', requireAuth, async (req, res) => {
         }
 
         const newTask = await createTask(group_id, createdBy, title, description, due_date, assigned_to, priority);
+
+        if (newTask.assigned_to) {
+            const actorUsername = await fetchUsername(createdBy);
+            await notifyTaskAssigned({
+                task: newTask,
+                assigneeId: newTask.assigned_to,
+                actorId: createdBy,
+                actorUsername,
+                groupName: newTask.group_name || 'your group'
+            });
+        }
 
         emitTaskCreated(group_id, newTask);
 
@@ -676,8 +694,25 @@ router.put('/:id', requireAuth, async (req, res) => {
             });
         }
 
+        const existingTask = assigned_to !== undefined ? await findTaskById(taskId) : null;
+
         // Update the task
         const updatedTask = await updateTask(taskId, userId, updateData);
+
+        if (
+            assigned_to !== undefined
+            && updatedTask.assigned_to
+            && Number(updatedTask.assigned_to) !== Number(existingTask?.assigned_to)
+        ) {
+            const actorUsername = await fetchUsername(userId);
+            await notifyTaskAssigned({
+                task: updatedTask,
+                assigneeId: updatedTask.assigned_to,
+                actorId: userId,
+                actorUsername,
+                groupName: updatedTask.group_name || 'your group'
+            });
+        }
 
         emitTaskUpdated(updatedTask.group_id, updatedTask);
 

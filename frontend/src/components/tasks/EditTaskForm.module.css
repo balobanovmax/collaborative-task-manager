@@ -6,7 +6,7 @@
   font-size: 24px;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 8px 0;
+  margin: 0 0 16px 0;
   text-align: center;
 }
 
@@ -157,8 +157,8 @@
 
 .buttonGroup {
   display: flex;
-  gap: 16px;
-  margin-top: 30px;
+  gap: 12px;
+  margin-top: 24px;
 }
 
 .buttonGroup button {

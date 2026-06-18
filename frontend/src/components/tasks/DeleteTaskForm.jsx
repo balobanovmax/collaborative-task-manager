@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './DeleteTaskForm.module.css';
 import { taskAPI } from '../../services/api';
 import { getTaskStatus, getStatusLabel } from '../../utils/taskStatus';
 
-function DeleteTaskForm({ tasks, onSuccess, onCancel }) {
-  const [selectedTask, setSelectedTask] = useState(null);
+function DeleteTaskForm({ tasks, onSuccess, onCancel, initialTask = null, hideTitle = false }) {
+  const [selectedTask, setSelectedTask] = useState(initialTask);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (initialTask) {
+      setSelectedTask(initialTask);
+    }
+  }, [initialTask?.id]);
 
   const handleTaskSelect = (task) => {
     setSelectedTask(task);
@@ -30,6 +36,11 @@ function DeleteTaskForm({ tasks, onSuccess, onCancel }) {
   };
 
   const handleBack = () => {
+    if (initialTask) {
+      onCancel();
+      return;
+    }
+
     setSelectedTask(null);
     setErrorMessage('');
   };
@@ -37,7 +48,7 @@ function DeleteTaskForm({ tasks, onSuccess, onCancel }) {
   if (selectedTask) {
     return (
       <div className={styles.formContainer}>
-        <h2 className={styles.formTitle}>Delete Task</h2>
+        {!hideTitle && <h2 className={styles.formTitle}>Delete Task</h2>}
 
         {errorMessage && (
           <div className={styles.errorMessage}>
@@ -77,7 +88,7 @@ function DeleteTaskForm({ tasks, onSuccess, onCancel }) {
             onClick={handleBack} 
             disabled={isLoading}
           >
-            Back
+            {initialTask ? 'Cancel' : 'Back'}
           </button>
           <button 
             type="button" 

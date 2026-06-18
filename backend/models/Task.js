@@ -1,5 +1,6 @@
 import pool from '../config/database.js';
 import { logTaskActivity } from './TaskActivity.js';
+import { isTaskOverdueByDate } from '../utils/taskDates.js';
 
 const TASK_STATUSES = ['todo', 'doing', 'done'];
 const TASK_PRIORITIES = ['low', 'medium', 'high', 'urgent'];
@@ -369,7 +370,7 @@ export const getTasksByGroup = async (groupId, options = {}) => {
         }
 
         if (overdueOnly) {
-            whereClause += " AND t.status != 'done' AND t.due_date IS NOT NULL AND t.due_date < NOW()";
+            whereClause += " AND t.status != 'done' AND t.due_date IS NOT NULL AND t.due_date::date < CURRENT_DATE";
         }
 
         if (dueFrom) {
@@ -425,11 +426,8 @@ export const getTasksByGroup = async (groupId, options = {}) => {
         const todoTasks = tasks.filter((task) => (task.status || 'todo') === 'todo').length;
         const doingTasks = tasks.filter((task) => task.status === 'doing').length;
         const doneTasks = tasks.filter((task) => (task.status || (task.is_completed ? 'done' : 'todo')) === 'done').length;
-        const overdueTasks = tasks.filter(task => 
-            task.status !== 'done' &&
-            !task.is_completed && 
-            task.due_date && 
-            new Date(task.due_date) < new Date()
+        const overdueTasks = tasks.filter((task) =>
+            isTaskOverdueByDate(task.due_date, task.status || (task.is_completed ? 'done' : 'todo'))
         ).length;
         
         return {
@@ -945,7 +943,7 @@ export const getTasksAssignedToUser = async (userId, options = {}) => {
         }
 
         if (overdueOnly) {
-            dynamicWhere += " AND t.status != 'done' AND t.due_date IS NOT NULL AND t.due_date < NOW()";
+            dynamicWhere += " AND t.status != 'done' AND t.due_date IS NOT NULL AND t.due_date::date < CURRENT_DATE";
         }
 
         if (dueFrom) {
@@ -988,11 +986,8 @@ export const getTasksAssignedToUser = async (userId, options = {}) => {
         const result = await pool.query(query, queryValues);
         const tasks = result.rows.map((task) => formatTaskFromRow(task));
 
-        const now = new Date();
         const overdueTasks = tasks.filter((task) =>
-            task.status !== 'done'
-            && task.due_date
-            && new Date(task.due_date) < now
+            isTaskOverdueByDate(task.due_date, task.status)
         ).length;
 
         return {

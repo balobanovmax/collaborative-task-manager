@@ -1,20 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './EditTaskForm.module.css';
 import { taskAPI } from '../../services/api';
 import { getTaskStatus, getStatusLabel } from '../../utils/taskStatus';
 import { TASK_PRIORITIES, getPriorityLabel, getTaskPriority } from '../../utils/taskPriority';
 
-function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+function EditTaskForm({ tasks, members = [], onSuccess, onCancel, initialTask = null, hideTitle = false }) {
+  const [selectedTaskId, setSelectedTaskId] = useState(initialTask?.id ?? null);
+  const [title, setTitle] = useState(initialTask?.title || '');
+  const [description, setDescription] = useState(initialTask?.description || '');
   const [dueDate, setDueDate] = useState('');
-  const [assignedTo, setAssignedTo] = useState('');
-  const [priority, setPriority] = useState('medium');
+  const [assignedTo, setAssignedTo] = useState(initialTask?.assigned_to ? String(initialTask.assigned_to) : '');
+  const [priority, setPriority] = useState(initialTask ? getTaskPriority(initialTask) : 'medium');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleTaskSelect = (task) => {
+  const applyTaskToForm = (task) => {
     setSelectedTaskId(task.id);
     setTitle(task.title || '');
     setDescription(task.description || '');
@@ -29,6 +29,16 @@ function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
     }
     setAssignedTo(task.assigned_to ? String(task.assigned_to) : '');
     setPriority(getTaskPriority(task));
+  };
+
+  useEffect(() => {
+    if (initialTask) {
+      applyTaskToForm(initialTask);
+    }
+  }, [initialTask?.id]);
+
+  const handleTaskSelect = (task) => {
+    applyTaskToForm(task);
   };
 
   const handleSubmit = async (e) => {
@@ -75,6 +85,11 @@ function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
   };
 
   const handleBack = () => {
+    if (initialTask) {
+      onCancel();
+      return;
+    }
+
     setSelectedTaskId(null);
     setTitle('');
     setDescription('');
@@ -87,7 +102,7 @@ function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
   if (selectedTaskId) {
     return (
       <div className={styles.formContainer}>
-        <h2 className={styles.formTitle}>Edit Task</h2>
+        {!hideTitle && <h2 className={styles.formTitle}>Edit Task</h2>}
 
         {errorMessage && (
           <div className={styles.errorMessage}>
@@ -172,7 +187,7 @@ function EditTaskForm({ tasks, members = [], onSuccess, onCancel }) {
               onClick={handleBack} 
               disabled={isLoading}
             >
-              Back
+              {initialTask ? 'Cancel' : 'Back'}
             </button>
             <button 
               type="submit" 

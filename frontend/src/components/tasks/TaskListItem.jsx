@@ -6,6 +6,7 @@ import TaskActivityLog from './TaskActivityLog';
 import TaskAttachments from './TaskAttachments';
 import TaskDrawings from './TaskDrawings';
 import TaskPriorityBadge from './TaskPriorityBadge';
+import TaskInlineActions from './TaskInlineActions';
 import UserAvatar from '../common/UserAvatar';
 import { getTaskStatus } from '../../utils/taskStatus';
 
@@ -24,7 +25,9 @@ function TaskListItem({
   onCommentAdded,
   onAttachmentAdded,
   onDrawingAdded,
-  onSubtaskUpdated
+  onSubtaskUpdated,
+  onEdit,
+  onDelete
 }) {
   const status = getTaskStatus(task);
   const commentCount = task.comment_count || 0;
@@ -102,6 +105,13 @@ function TaskListItem({
         </div>
 
         <div className={styles.summaryActions} onClick={(event) => event.stopPropagation()}>
+          {(onEdit || onDelete) && (
+            <TaskInlineActions
+              onEdit={() => onEdit?.(task)}
+              onDelete={() => onDelete?.(task)}
+              disabled={isUpdatingStatus}
+            />
+          )}
           <TaskStatusControl
             task={task}
             onStatusChange={onStatusChange}

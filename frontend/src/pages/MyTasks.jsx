@@ -5,6 +5,8 @@ import Navbar from '../components/common/Navbar';
 import TaskStatusControl from '../components/tasks/TaskStatusControl';
 import TaskPriorityBadge from '../components/tasks/TaskPriorityBadge';
 import TaskFiltersBar from '../components/tasks/TaskFiltersBar';
+import TaskInlineActions from '../components/tasks/TaskInlineActions';
+import TaskQuickActionModal from '../components/tasks/TaskQuickActionModal';
 import { taskAPI } from '../services/api';
 import {
   getTaskStatus,
@@ -23,6 +25,7 @@ function MyTasks() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [taskQuickAction, setTaskQuickAction] = useState({ mode: null, task: null });
 
   const fetchMyTasks = useCallback(async () => {
     try {
@@ -119,6 +122,22 @@ function MyTasks() {
     return '';
   };
 
+  const openTaskEdit = (task) => {
+    setTaskQuickAction({ mode: 'edit', task });
+  };
+
+  const openTaskDelete = (task) => {
+    setTaskQuickAction({ mode: 'delete', task });
+  };
+
+  const closeTaskQuickAction = () => {
+    setTaskQuickAction({ mode: null, task: null });
+  };
+
+  const handleQuickTaskActionSuccess = () => {
+    fetchMyTasks();
+  };
+
   return (
     <>
       <Navbar />
@@ -212,6 +231,11 @@ function MyTasks() {
                   </button>
 
                   <div className={styles.taskActions}>
+                    <TaskInlineActions
+                      onEdit={() => openTaskEdit(task)}
+                      onDelete={() => openTaskDelete(task)}
+                      disabled={isUpdatingStatus}
+                    />
                     <TaskStatusControl
                       task={task}
                       onStatusChange={handleStatusChange}
@@ -230,6 +254,14 @@ function MyTasks() {
               ))}
           </div>
         )}
+
+        <TaskQuickActionModal
+          isOpen={Boolean(taskQuickAction.mode && taskQuickAction.task)}
+          mode={taskQuickAction.mode}
+          task={taskQuickAction.task}
+          onClose={closeTaskQuickAction}
+          onSuccess={handleQuickTaskActionSuccess}
+        />
       </div>
     </>
   );

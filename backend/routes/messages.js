@@ -1,7 +1,9 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { createMessage, createVoiceMessage, getMessagesByGroup, deleteAllMessagesByGroup } from '../models/Message.js';
+import { findGroupById } from '../models/Group.js';
 import { emitMessageSent, emitChatCleared } from '../utils/socket.js';
+import { notifyChatMentions } from '../utils/taskNotifications.js';
 import { uploadVoiceMessage } from '../middleware/uploadVoiceMessage.js';
 
 const router = express.Router();
@@ -27,6 +29,18 @@ router.post('/', requireAuth, async (req, res) => {
         }
 
         const message = await createMessage(groupId, userId, content);
+
+        if (message.mentions?.length) {
+            const group = await findGroupById(groupId);
+            await notifyChatMentions({
+                mentions: message.mentions,
+                authorId: userId,
+                authorUsername: message.username,
+                groupId,
+                groupName: group?.name || 'your group',
+                messageId: message.id
+            });
+        }
 
         emitMessageSent(groupId, message);
 

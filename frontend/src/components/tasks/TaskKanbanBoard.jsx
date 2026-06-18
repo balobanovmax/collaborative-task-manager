@@ -2,10 +2,19 @@ import { useState } from 'react';
 import styles from './TaskKanbanBoard.module.css';
 import UserAvatar from '../common/UserAvatar';
 import TaskPriorityBadge from './TaskPriorityBadge';
+import TaskInlineActions from './TaskInlineActions';
 import { getTaskStatus, getStatusLabel, TASK_STATUSES } from '../../utils/taskStatus';
 import { compareTaskPriority } from '../../utils/taskPriority';
 
-function TaskKanbanBoard({ tasks, onStatusChange, onPriorityChange, getTaskAssignee, isUpdating = false }) {
+function TaskKanbanBoard({
+  tasks,
+  onStatusChange,
+  onPriorityChange,
+  getTaskAssignee,
+  isUpdating = false,
+  onEdit,
+  onDelete
+}) {
   const [draggedTaskId, setDraggedTaskId] = useState(null);
   const [dragOverColumn, setDragOverColumn] = useState(null);
 
@@ -86,12 +95,21 @@ function TaskKanbanBoard({ tasks, onStatusChange, onPriorityChange, getTaskAssig
                   >
                     <div className={styles.cardHeader}>
                       <h4 className={styles.cardTitle}>{task.title}</h4>
-                      <TaskPriorityBadge
-                        task={task}
-                        compact
-                        onPriorityChange={onPriorityChange}
-                        disabled={isUpdating}
-                      />
+                      <div className={styles.cardHeaderActions}>
+                        {(onEdit || onDelete) && (
+                          <TaskInlineActions
+                            onEdit={() => onEdit?.(task)}
+                            onDelete={() => onDelete?.(task)}
+                            disabled={isUpdating}
+                          />
+                        )}
+                        <TaskPriorityBadge
+                          task={task}
+                          compact
+                          onPriorityChange={onPriorityChange}
+                          disabled={isUpdating}
+                        />
+                      </div>
                     </div>
                     {task.description && (
                       <p className={styles.cardDescription}>{task.description}</p>
