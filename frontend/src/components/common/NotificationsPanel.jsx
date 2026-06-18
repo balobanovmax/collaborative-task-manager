@@ -25,7 +25,7 @@ const formatTime = (timestamp) => {
   return date.toLocaleDateString();
 };
 
-function NotificationsPanel() {
+function NotificationsPanel({ onNavigate }) {
   const navigate = useNavigate();
   const user = getUser();
   const [isOpen, setIsOpen] = useState(false);
@@ -111,6 +111,7 @@ function NotificationsPanel() {
       const groupId = notification.metadata?.group_id;
       const taskId = notification.metadata?.task_id;
       if (groupId) {
+        onNavigate?.();
         navigate(`/groups/${groupId}`, taskId ? { state: { expandTaskId: taskId } } : undefined);
       }
     } catch (error) {

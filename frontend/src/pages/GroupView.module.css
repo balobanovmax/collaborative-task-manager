@@ -1,8 +1,8 @@
 .container {
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - var(--navbar-height));
   padding: 40px 20px;
   background-color: var(--bg-page);
-  margin-top: 70px;
+  margin-top: var(--navbar-height);
   box-sizing: border-box;
 }
 
@@ -991,16 +991,93 @@
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+
+  .backButton {
+    margin-bottom: 20px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    margin-bottom: 20px;
+    gap: 16px;
+  }
+
+  .groupName {
+    font-size: 22px;
+  }
+
+  .groupIdBox {
+    align-self: flex-start;
+  }
+
   .content {
     grid-template-columns: 1fr;
+    gap: 20px;
   }
-  
+
   .sidebar {
     order: 2;
   }
-  
+
   .mainContent {
     order: 1;
+  }
+
+  .tasksSection {
+    padding: 16px;
+  }
+
+  .tasksSectionHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tasksHeaderActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .viewToggle {
+    flex: 1;
+  }
+
+  .viewToggleButton {
+    flex: 1;
+    padding: 10px 8px;
+  }
+
+  .manageTasksButton {
+    width: 100%;
+  }
+
+  .assigneeFilter {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .membersSection,
+  .joinRequestsSection {
+    padding: 16px;
+  }
+
+  .editModal {
+    margin: 12px;
+    padding: 20px 16px;
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+
+  .editModalActions {
+    flex-direction: column-reverse;
+  }
+
+  .editModalActions button {
+    width: 100%;
   }
 }
 

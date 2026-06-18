@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './ResizableWindow.module.css';
+import { useMobileLayout } from '../../hooks/useMobileLayout';
 
 const MIN_WIDTH = 300;
 const MIN_HEIGHT = 320;
@@ -50,6 +51,7 @@ function ResizableWindow({
   });
   const dragRef = useRef(null);
   const resizeRef = useRef(null);
+  const isMobile = useMobileLayout();
 
   const applyWindowState = useCallback((nextPosition, nextSize) => {
     const clamped = clampWindowToViewport(nextPosition, nextSize);
@@ -116,7 +118,7 @@ function ResizableWindow({
   }, [onFocus]);
 
   const handleDragStart = (event) => {
-    if (event.button !== 0 || event.target.closest('button')) {
+    if (isMobile || event.button !== 0 || event.target.closest('button')) {
       return;
     }
 
@@ -133,6 +135,10 @@ function ResizableWindow({
   };
 
   const handleResizeStart = (event) => {
+    if (isMobile) {
+      return;
+    }
+
     event.preventDefault();
     event.stopPropagation();
     handleFocus();
@@ -150,16 +156,24 @@ function ResizableWindow({
     return null;
   }
 
-  return (
-    <div
-      className={styles.window}
-      style={{
+  const windowClassName = isMobile
+    ? `${styles.window} ${styles.windowMobile}`
+    : styles.window;
+
+  const windowStyle = isMobile
+    ? { zIndex }
+    : {
         left: `${position.x}px`,
         top: `${position.y}px`,
         width: `${size.width}px`,
         height: `${size.height}px`,
         zIndex
-      }}
+      };
+
+  return (
+    <div
+      className={windowClassName}
+      style={windowStyle}
       role="dialog"
       aria-label={ariaLabel || title}
       onMouseDown={handleFocus}

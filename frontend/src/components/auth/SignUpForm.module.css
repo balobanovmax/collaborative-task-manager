@@ -4,7 +4,7 @@
   padding: 30px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  max-width: 400px;
+  max-width: 440px;
   width: 100%;
 }
 
@@ -12,8 +12,44 @@
   font-size: 28px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 10px;
+  margin-bottom: 16px;
   text-align: center;
+}
+
+.demoNotice {
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.22);
+  border-radius: 6px;
+}
+
+.demoNoticeTitle {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.demoNoticeText {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-subtle);
+}
+
+.demoNoticeExample {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-subtle);
+}
+
+.demoNoticeExample li {
+  margin-bottom: 2px;
 }
 
 .messageContainer {
@@ -71,4 +107,17 @@
   flex: 1;
 }
 
+@media (max-width: 768px) {
+  .formContainer {
+    padding: 20px 16px;
+  }
+
+  .formTitle {
+    font-size: 24px;
+  }
+
+  .buttonGroup {
+    flex-direction: column;
+  }
+}
 

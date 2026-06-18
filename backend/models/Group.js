@@ -1,5 +1,6 @@
 import pool from '../config/database.js';
 import { hashPassword, comparePassword } from '../utils/passwordHash.js';
+import { getJoinMode, validateJoinMode } from '../utils/groupJoinMode.js';
 
 const validateGroupInput = (name, description = '') => {
     const errors = [];
@@ -21,7 +22,7 @@ const validateGroupInput = (name, description = '') => {
     return errors;
 };
 
-export const createGroup = async (name, ownerId, description = '', isPublic = false, joinPassword = null) => {
+export const createGroup = async (name, ownerId, description = '', joinMode = 'public', joinPassword = null) => {
     try {
         const validationErrors = validateGroupInput(name, description);
         if (validationErrors.length > 0) {
@@ -31,6 +32,8 @@ export const createGroup = async (name, ownerId, description = '', isPublic = fa
         if (!ownerId || typeof ownerId !== 'number') {
             throw new Error('Valid owner ID is required');
         }
+
+        const normalizedJoinMode = validateJoinMode(joinMode);
         
         const normalizedName = name.trim();
         const normalizedDescription = description ? description.trim() : '';
@@ -40,9 +43,14 @@ export const createGroup = async (name, ownerId, description = '', isPublic = fa
             throw new Error('You already have a group with this name');
         }
         
+        const isPublic = normalizedJoinMode === 'public';
         let joinPasswordHash = null;
-        if (joinPassword) {
-            joinPasswordHash = await hashPassword(joinPassword);
+
+        if (normalizedJoinMode === 'password') {
+            if (!joinPassword || !joinPassword.trim()) {
+                throw new Error('Password is required for password-protected groups');
+            }
+            joinPasswordHash = await hashPassword(joinPassword.trim());
         }
         
         const query = `
@@ -312,8 +320,10 @@ export const updateGroup = async (groupId, ownerId, updateData) => {
         if (group.owner_id !== ownerId) {
             throw new Error('Only group owner can update the group');
         }
+
+        const existingGroupWithPassword = await findGroupByIdWithPassword(groupId);
         
-        const { name, description, is_public, join_password } = updateData;
+        const { name, description, join_mode, join_password, is_public } = updateData;
         
         if (name !== undefined) {
             const validationErrors = validateGroupInput(name, description !== undefined ? description : group.description);
@@ -338,8 +348,22 @@ export const updateGroup = async (groupId, ownerId, updateData) => {
             paramCount++;
         }
 
-        if (is_public !== undefined) {
+        let joinModeToApply = join_mode;
+
+        if (joinModeToApply === undefined && is_public !== undefined) {
             if (is_public) {
+                joinModeToApply = 'public';
+            } else if (join_password && join_password.trim()) {
+                joinModeToApply = 'password';
+            } else {
+                joinModeToApply = getJoinMode(existingGroupWithPassword);
+            }
+        }
+
+        if (joinModeToApply !== undefined) {
+            const normalizedJoinMode = validateJoinMode(joinModeToApply);
+
+            if (normalizedJoinMode === 'public') {
                 fieldsToUpdate.push(`is_public = $${paramCount}`);
                 values.push(true);
                 paramCount++;
@@ -347,13 +371,15 @@ export const updateGroup = async (groupId, ownerId, updateData) => {
                 fieldsToUpdate.push(`join_password_hash = $${paramCount}`);
                 values.push(null);
                 paramCount++;
-            } else {
-                const switchingToPrivate = group.is_public;
+            } else if (normalizedJoinMode === 'approval') {
+                fieldsToUpdate.push(`is_public = $${paramCount}`);
+                values.push(false);
+                paramCount++;
 
-                if (switchingToPrivate && (!join_password || !join_password.trim())) {
-                    throw new Error('Password is required when making a group private');
-                }
-
+                fieldsToUpdate.push(`join_password_hash = $${paramCount}`);
+                values.push(null);
+                paramCount++;
+            } else if (normalizedJoinMode === 'password') {
                 fieldsToUpdate.push(`is_public = $${paramCount}`);
                 values.push(false);
                 paramCount++;
@@ -363,10 +389,12 @@ export const updateGroup = async (groupId, ownerId, updateData) => {
                     fieldsToUpdate.push(`join_password_hash = $${paramCount}`);
                     values.push(joinPasswordHash);
                     paramCount++;
+                } else if (!existingGroupWithPassword.join_password_hash) {
+                    throw new Error('Password is required for password-protected groups');
                 }
             }
         } else if (join_password && join_password.trim()) {
-            if (group.is_public) {
+            if (existingGroupWithPassword.is_public) {
                 throw new Error('Cannot set a password on a public group');
             }
 

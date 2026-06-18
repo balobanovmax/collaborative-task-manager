@@ -11,6 +11,7 @@ function Navbar() {
   const location = useLocation();
   const loggedIn = isAuthenticated();
   const [user, setUser] = useState(getUser());
+  const [menuOpen, setMenuOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -22,16 +23,30 @@ function Navbar() {
     return () => window.removeEventListener('user-updated', handleUserUpdated);
   }, []);
 
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [menuOpen]);
+
   const handleLogout = () => {
+    setMenuOpen(false);
     logout();
     navigate('/', { state: { message: 'Logged out successfully.' }, replace: true });
   };
+
+  const closeMenu = () => setMenuOpen(false);
 
   return (
     <nav className={styles.navbar}>
       <div className={styles.navContent}>
         <div className={styles.navLeft}>
-          <Link to="/" className={styles.logo}>
+          <Link to="/" className={styles.logo} onClick={closeMenu}>
             Task Manager
           </Link>
           {loggedIn && user?.username && (
@@ -41,12 +56,22 @@ function Navbar() {
                 profilePictureUrl={user.profile_picture_url}
                 size="sm"
               />
-              <span>Logged in as: {user.username}</span>
+              <span className={styles.userGreetingText}>Logged in as: {user.username}</span>
             </div>
           )}
         </div>
-        
-        <div className={styles.buttonGroup}>
+
+        <button
+          type="button"
+          className={styles.menuToggle}
+          onClick={() => setMenuOpen((open) => !open)}
+          aria-expanded={menuOpen}
+          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+        >
+          {menuOpen ? 'Close' : 'Menu'}
+        </button>
+
+        <div className={`${styles.buttonGroup} ${menuOpen ? styles.buttonGroupOpen : ''}`}>
           <button
             type="button"
             onClick={toggleTheme}
@@ -58,14 +83,15 @@ function Navbar() {
           </button>
           {loggedIn ? (
             <>
-              <NotificationsPanel />
-              <Link to="/my-tasks" className={styles.btnSecondary}>
+              <NotificationsPanel onNavigate={closeMenu} />
+              <Link to="/my-tasks" className={styles.btnSecondary} onClick={closeMenu}>
                 My Tasks
               </Link>
               <Link
                 to="/settings"
                 state={{ returnTo: location.pathname }}
                 className={styles.btnSecondary}
+                onClick={closeMenu}
               >
                 Settings
               </Link>
@@ -75,16 +101,25 @@ function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" className={styles.btnSecondary}>
+              <Link to="/login" className={styles.btnSecondary} onClick={closeMenu}>
                 Log In
               </Link>
-              <Link to="/signup" className={styles.btnPrimary}>
+              <Link to="/signup" className={styles.btnPrimary} onClick={closeMenu}>
                 Sign Up
               </Link>
             </>
           )}
         </div>
       </div>
+
+      {menuOpen && (
+        <button
+          type="button"
+          className={styles.menuBackdrop}
+          aria-label="Close menu"
+          onClick={closeMenu}
+        />
+      )}
     </nav>
   );
 }

@@ -1,8 +1,8 @@
 .container {
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - var(--navbar-height));
   padding: 40px 20px;
   background-color: var(--bg-page);
-  margin-top: 70px;
+  margin-top: var(--navbar-height);
   box-sizing: border-box;
 }
 
@@ -33,6 +33,10 @@
   margin: 0 auto 30px;
   max-width: 1200px;
   text-align: left;
+}
+
+.pageTitleCentered {
+  text-align: center;
 }
 
 .loading {
@@ -240,5 +244,29 @@
   }
 }
 
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+
+  .pageTitle {
+    font-size: 26px;
+    margin-bottom: 20px;
+  }
+
+  .groupsList {
+    grid-template-columns: 1fr;
+  }
+
+  .groupActions {
+    flex-wrap: wrap;
+  }
+
+  .enterButton,
+  .deleteButton {
+    flex: 1;
+    min-width: 0;
+  }
+}
 
 

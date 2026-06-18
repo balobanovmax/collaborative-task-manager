@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './CreateGroupForm.module.css';
 import { groupAPI } from '../../services/api';
+import { JOIN_MODES, JOIN_MODE_LABELS } from '../../utils/groupJoinMode';
 
 function CreateGroupForm() {
   const [groupName, setGroupName] = useState('');
   const [description, setDescription] = useState('');
-  const [isPublic, setIsPublic] = useState(true);
+  const [joinMode, setJoinMode] = useState('public');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -17,14 +18,20 @@ function CreateGroupForm() {
     e.preventDefault();
     
     setErrorMessage('');
+
+    if (joinMode === 'password' && !password.trim()) {
+      setErrorMessage('Password is required for password-protected groups');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       await groupAPI.createGroup(
         groupName.trim(),
         description.trim() || null,
-        isPublic,
-        !isPublic && password.trim() ? password : null
+        joinMode,
+        joinMode === 'password' ? password : null
       );
       
       navigate('/my-groups', { 
@@ -45,6 +52,14 @@ function CreateGroupForm() {
 
   const handleCancel = () => {
     navigate('/dashboard');
+  };
+
+  const handleJoinModeChange = (mode) => {
+    setJoinMode(mode);
+    if (mode !== 'password') {
+      setPassword('');
+    }
+    setErrorMessage('');
   };
 
   return (
@@ -88,46 +103,45 @@ function CreateGroupForm() {
         </div>
 
         <div className={styles.formGroup}>
-          <label className={styles.formLabel}>Privacy</label>
+          <label className={styles.formLabel}>Join Settings</label>
           <div className={styles.radioGroup}>
-            <label className={styles.radioLabel}>
-              <input
-                type="radio"
-                name="privacy"
-                checked={isPublic}
-                onChange={() => setIsPublic(true)}
-                disabled={isLoading}
-              />
-              <span>Public (anyone can join)</span>
-            </label>
-            <label className={styles.radioLabel}>
-              <input
-                type="radio"
-                name="privacy"
-                checked={!isPublic}
-                onChange={() => setIsPublic(false)}
-                disabled={isLoading}
-              />
-              <span>Private (password or owner approval)</span>
-            </label>
+            {JOIN_MODES.map((mode) => (
+              <label key={mode} className={styles.radioLabel}>
+                <input
+                  type="radio"
+                  name="joinMode"
+                  checked={joinMode === mode}
+                  onChange={() => handleJoinModeChange(mode)}
+                  disabled={isLoading}
+                />
+                <span>{JOIN_MODE_LABELS[mode]}</span>
+              </label>
+            ))}
           </div>
         </div>
 
-        {!isPublic && (
+        {joinMode === 'password' && (
           <div className={styles.formGroup}>
-            <label className={styles.formLabel}>Password (optional)</label>
+            <label className={styles.formLabel}>Group Password</label>
             <input
               type="password"
               className={styles.formInput}
-              placeholder="Leave blank for request-to-join"
+              placeholder="Enter group password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={isLoading}
+              required
             />
             <p className={styles.helperText}>
-              Set a password for instant join, or leave blank so members must request access
+              Members must enter this password to join instantly.
             </p>
           </div>
+        )}
+
+        {joinMode === 'approval' && (
+          <p className={styles.helperText}>
+            New members submit a join request and the group owner approves or declines it.
+          </p>
         )}
 
         <div className={styles.buttonGroup}>
@@ -149,4 +163,3 @@ function CreateGroupForm() {
 }
 
 export default CreateGroupForm;
-

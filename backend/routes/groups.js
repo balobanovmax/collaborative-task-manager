@@ -1,6 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { createGroup, findGroupById, deleteGroup, updateGroup, transferGroupOwnership } from '../models/Group.js';
+import { createGroup, findGroupById, findGroupByIdWithPassword, deleteGroup, updateGroup, transferGroupOwnership } from '../models/Group.js';
+import { formatGroupForResponse } from '../utils/groupJoinMode.js';
 import { getMemberCount, addUserToGroup, getGroupMembers, removeUserFromGroup, isUserMember } from '../models/GroupMember.js';
 import {
     getJoinPreview,
@@ -24,7 +25,7 @@ router.post('/', requireAuth, async (req, res) => {
         const ownerId = req.userId;
         
         // Extract group data from request body
-        const { name, description, is_public, join_password } = req.body;
+        const { name, description, join_mode, is_public, join_password } = req.body;
         
         // Validate required fields
         if (!name) {
@@ -33,18 +34,28 @@ router.post('/', requireAuth, async (req, res) => {
                 message: 'Group name is required'
             });
         }
+
+        let resolvedJoinMode = join_mode;
+        if (!resolvedJoinMode) {
+            if (is_public === true || is_public === undefined) {
+                resolvedJoinMode = 'public';
+            } else if (join_password && join_password.trim()) {
+                resolvedJoinMode = 'password';
+            } else {
+                resolvedJoinMode = 'approval';
+            }
+        }
         
         // Create the group using our Group model
         const newGroup = await createGroup(
             name,
             ownerId, 
             description,
-            is_public,
+            resolvedJoinMode,
             join_password
         );
         
         // Automatically add the group creator as a member
-        // Pass the password so creator can join their own private group
         await addUserToGroup(ownerId, newGroup.id, join_password, { skipPasswordCheck: true });
         
         // Send success response
@@ -52,7 +63,11 @@ router.post('/', requireAuth, async (req, res) => {
             success: true,
             message: 'Group created successfully',
             data: {
-                group: newGroup
+                group: {
+                    ...newGroup,
+                    join_mode: resolvedJoinMode,
+                    has_join_password: resolvedJoinMode === 'password'
+                }
             }
         });
         
@@ -233,7 +248,7 @@ router.get('/:id', requireAuth, async (req, res) => {
             });
         }
         
-        const group = await findGroupById(groupId);
+        const group = await findGroupByIdWithPassword(groupId);
         
         if (!group) {
             return res.status(404).json({
@@ -256,7 +271,7 @@ router.get('/:id', requireAuth, async (req, res) => {
             success: true,
             data: {
                 group: {
-                    ...group,
+                    ...formatGroupForResponse(group),
                     member_count: memberCount
                 }
             }
@@ -284,21 +299,24 @@ router.put('/:id', requireAuth, async (req, res) => {
             });
         }
         
-        const { name, description, is_public, join_password } = req.body;
+        const { name, description, join_mode, is_public, join_password } = req.body;
         
         const updatedGroup = await updateGroup(groupId, userId, {
             name,
             description,
+            join_mode,
             is_public,
             join_password
         });
+
+        const groupWithPassword = await findGroupByIdWithPassword(groupId);
         
         emitGroupUpdated(groupId);
         
         res.json({
             success: true,
             message: 'Group updated successfully',
-            data: { group: updatedGroup }
+            data: { group: formatGroupForResponse(groupWithPassword) }
         });
         
     } catch (error) {

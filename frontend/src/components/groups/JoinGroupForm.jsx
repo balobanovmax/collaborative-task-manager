@@ -191,7 +191,7 @@ function JoinGroupForm() {
         <form onSubmit={handleRequestAccess}>
           <div className={styles.previewBox}>
             <p className={styles.previewText}>
-              <strong>{preview.name}</strong> is a private group. Request access and the owner will approve or decline.
+              <strong>{preview.name}</strong> requires a join request. The owner will approve or decline your request.
             </p>
           </div>
           <div className={styles.formGroup}>

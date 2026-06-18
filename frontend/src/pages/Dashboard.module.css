@@ -1,8 +1,8 @@
 
 .container {
-  min-height: calc(100vh - 70px);
+  min-height: calc(100vh - var(--navbar-height));
   background-color: var(--bg-page);
-  margin-top: 70px;
+  margin-top: var(--navbar-height);
   padding: 40px 20px;
   box-sizing: border-box;
 }
@@ -94,6 +94,26 @@
   to {
     bottom: 30px;
     opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+
+  .title {
+    font-size: 26px;
+  }
+
+  .actionsGrid {
+    flex-direction: column;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .actionButton {
+    width: 100%;
   }
 }
 

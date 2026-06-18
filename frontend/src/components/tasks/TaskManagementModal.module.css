@@ -88,3 +88,11 @@
   background-color: var(--bg-page);
 }
 
+@media (max-width: 768px) {
+  .modalContent {
+    padding: 24px 20px;
+    width: calc(100% - 24px);
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+  }
+}

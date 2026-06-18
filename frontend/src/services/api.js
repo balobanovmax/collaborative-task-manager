@@ -88,11 +88,11 @@ export const groupAPI = {
     return response.data;
   },
 
-  createGroup: async (name, description, isPublic, password = null) => {
+  createGroup: async (name, description, joinMode = 'public', password = null) => {
     const response = await api.post('/groups', {
       name,
       description,
-      is_public: isPublic,
+      join_mode: joinMode,
       join_password: password
     });
     return response.data;
@@ -130,8 +130,8 @@ export const groupAPI = {
     return response.data;
   },
 
-  updateGroup: async (groupId, { name, description, is_public, join_password } = {}) => {
-    const payload = { name, description, is_public };
+  updateGroup: async (groupId, { name, description, join_mode, join_password } = {}) => {
+    const payload = { name, description, join_mode };
 
     if (join_password) {
       payload.join_password = join_password;

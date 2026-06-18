@@ -134,3 +134,24 @@
   font-size: 13px;
   margin: 0;
 }
+
+@media (max-width: 768px) {
+  .notificationsButton {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    width: auto;
+    max-height: min(320px, 50dvh);
+    z-index: 1102;
+  }
+
+  .list {
+    max-height: min(260px, calc(50dvh - 60px));
+  }
+}

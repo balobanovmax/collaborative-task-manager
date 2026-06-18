@@ -99,6 +99,8 @@ function MyGroups() {
     navigate('/dashboard');
   };
 
+  const hasNoGroups = !isLoading && !errorMessage && ownedGroups.length === 0 && memberGroups.length === 0;
+
   return (
     <>
       <Navbar />
@@ -107,7 +109,7 @@ function MyGroups() {
           ← Back
         </button>
         
-        <h1 className={styles.pageTitle}>My Groups</h1>
+        <h1 className={`${styles.pageTitle} ${hasNoGroups ? styles.pageTitleCentered : ''}`}>My Groups</h1>
 
         {isLoading && (
           <div className={styles.loading}>Loading groups...</div>

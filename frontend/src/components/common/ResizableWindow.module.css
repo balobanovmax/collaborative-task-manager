@@ -85,3 +85,19 @@
     transparent 76%
   );
 }
+
+.windowMobile {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-height: 100dvh;
+  border-radius: 0;
+}
+
+.windowMobile .header {
+  cursor: default;
+}
+
+.windowMobile .resizeHandle {
+  display: none;
+}

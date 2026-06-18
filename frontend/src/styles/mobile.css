@@ -1,0 +1,21 @@
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --navbar-height: 56px;
+  }
+
+  .notification {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    max-width: none;
+    text-align: center;
+  }
+}

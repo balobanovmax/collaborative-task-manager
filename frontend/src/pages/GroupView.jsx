@@ -41,6 +41,7 @@ import {
   onTaskDrawingAdded,
   onVoiceRosterUpdated
 } from '../services/socket';
+import { getJoinModeFromGroup, JOIN_MODES, JOIN_MODE_LABELS } from '../utils/groupJoinMode';
 import { requestVoiceRoster } from '../services/voiceChat';
 
 const getTaskAssignee = (task) => {
@@ -89,7 +90,7 @@ function GroupView() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const [editIsPublic, setEditIsPublic] = useState(true);
+  const [editJoinMode, setEditJoinMode] = useState('public');
   const [editPassword, setEditPassword] = useState('');
   const [editError, setEditError] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -652,7 +653,7 @@ function GroupView() {
   const openEditModal = () => {
     setEditName(group?.name || '');
     setEditDescription(group?.description || '');
-    setEditIsPublic(group?.is_public ?? true);
+    setEditJoinMode(getJoinModeFromGroup(group));
     setEditPassword('');
     setEditError('');
     setIsEditModalOpen(true);
@@ -662,7 +663,7 @@ function GroupView() {
     setIsEditModalOpen(false);
     setEditName('');
     setEditDescription('');
-    setEditIsPublic(true);
+    setEditJoinMode('public');
     setEditPassword('');
     setEditError('');
   };
@@ -671,6 +672,14 @@ function GroupView() {
     e.preventDefault();
     if (!editName.trim()) return;
 
+    if (editJoinMode === 'password') {
+      const needsNewPassword = getJoinModeFromGroup(group) !== 'password' && !editPassword.trim();
+      if (needsNewPassword) {
+        setEditError('Password is required for password-protected groups');
+        return;
+      }
+    }
+
     try {
       setIsEditing(true);
       setEditError('');
@@ -678,10 +687,10 @@ function GroupView() {
       const updatePayload = {
         name: editName.trim(),
         description: editDescription.trim(),
-        is_public: editIsPublic
+        join_mode: editJoinMode
       };
 
-      if (!editIsPublic && editPassword.trim()) {
+      if (editJoinMode === 'password' && editPassword.trim()) {
         updatePayload.join_password = editPassword.trim();
       }
 
@@ -1168,53 +1177,57 @@ function GroupView() {
                   />
                 </div>
                 <div className={styles.formGroup}>
-                  <label className={styles.formLabel}>Privacy</label>
+                  <label className={styles.formLabel}>Join Settings</label>
                   <div className={styles.radioGroup}>
-                    <label className={styles.radioLabel}>
-                      <input
-                        type="radio"
-                        name="editPrivacy"
-                        checked={editIsPublic}
-                        onChange={() => {
-                          setEditIsPublic(true);
-                          setEditPassword('');
-                          setEditError('');
-                        }}
-                        disabled={isEditing}
-                      />
-                      <span>Public (anyone can join)</span>
-                    </label>
-                    <label className={styles.radioLabel}>
-                      <input
-                        type="radio"
-                        name="editPrivacy"
-                        checked={!editIsPublic}
-                        onChange={() => setEditIsPublic(false)}
-                        disabled={isEditing}
-                      />
-                      <span>Private (requires password)</span>
-                    </label>
+                    {JOIN_MODES.map((mode) => (
+                      <label key={mode} className={styles.radioLabel}>
+                        <input
+                          type="radio"
+                          name="editJoinMode"
+                          checked={editJoinMode === mode}
+                          onChange={() => {
+                            setEditJoinMode(mode);
+                            if (mode !== 'password') {
+                              setEditPassword('');
+                            }
+                            setEditError('');
+                          }}
+                          disabled={isEditing}
+                        />
+                        <span>{JOIN_MODE_LABELS[mode]}</span>
+                      </label>
+                    ))}
                   </div>
                 </div>
-                {!editIsPublic && (
+                {editJoinMode === 'password' && (
                   <div className={styles.formGroup}>
                     <label className={styles.formLabel}>
-                      {group?.is_public ? 'Password' : 'New Password (optional)'}
+                      {getJoinModeFromGroup(group) === 'password' ? 'New Password (optional)' : 'Group Password'}
                     </label>
                     <input
                       type="password"
                       className={styles.formInput}
-                      placeholder={group?.is_public ? 'Enter group password' : 'Leave blank to keep current password'}
+                      placeholder={
+                        getJoinModeFromGroup(group) === 'password'
+                          ? 'Leave blank to keep current password'
+                          : 'Enter group password'
+                      }
                       value={editPassword}
                       onChange={(e) => setEditPassword(e.target.value)}
                       disabled={isEditing}
+                      required={getJoinModeFromGroup(group) !== 'password'}
                     />
                     <p className={styles.helperText}>
-                      {group?.is_public
-                        ? 'Set a password for instant join, or leave blank for request-to-join'
-                        : 'Enter a new password to change it, or leave blank to keep current settings'}
+                      {getJoinModeFromGroup(group) === 'password'
+                        ? 'Enter a new password to change it, or leave blank to keep the current one.'
+                        : 'Members must enter this password to join instantly.'}
                     </p>
                   </div>
+                )}
+                {editJoinMode === 'approval' && (
+                  <p className={styles.helperText}>
+                    New members submit a join request and the group owner approves or declines it.
+                  </p>
                 )}
                 {editError && (
                   <div className={styles.editError}>{editError}</div>

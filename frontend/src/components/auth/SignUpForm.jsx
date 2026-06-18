@@ -43,6 +43,22 @@ function SignUpForm() {
   return (
     <div className={styles.formContainer}>
       <h2 className={styles.formTitle}>Sign Up</h2>
+
+      <div className={styles.demoNotice} role="note">
+        <p className={styles.demoNoticeTitle}>Demo credentials only</p>
+        <p className={styles.demoNoticeText}>
+          This is a portfolio project. Auth is kept simple on purpose so the focus stays
+          on real-time collaboration, not OAuth setup for a side project.
+        </p>
+        <p className={styles.demoNoticeText}>
+          Please use fake credentials you do not use anywhere else. For example:
+        </p>
+        <ul className={styles.demoNoticeExample}>
+          <li><strong>Username:</strong> demo_dev</li>
+          <li><strong>Email:</strong> demo@example.com</li>
+          <li><strong>Password:</strong> DemoPass123!</li>
+        </ul>
+      </div>
       
       <div className={styles.messageContainer}>
         {errorMessage && (
@@ -71,7 +87,7 @@ function SignUpForm() {
           <input
             type="email"
             className={styles.formInput}
-            placeholder="Enter your email"
+            placeholder="demo@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

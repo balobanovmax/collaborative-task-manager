@@ -104,3 +104,20 @@
   cursor: not-allowed;
 }
 
+@media (max-width: 768px) {
+  .modalContent {
+    padding: 24px 20px;
+    width: calc(100% - 32px);
+    max-width: none;
+  }
+
+  .modalActions {
+    flex-direction: column-reverse;
+  }
+
+  .cancelButton,
+  .confirmButton {
+    width: 100%;
+  }
+}
+

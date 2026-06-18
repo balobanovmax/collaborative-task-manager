@@ -64,3 +64,28 @@
   border-color: var(--primary);
   color: var(--primary);
 }
+
+@media (max-width: 768px) {
+  .bar {
+    gap: 8px;
+  }
+
+  .searchInput {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .select,
+  .dateInput {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+
+  .checkboxLabel {
+    flex: 1 1 100%;
+  }
+
+  .clearButton {
+    width: 100%;
+  }
+}

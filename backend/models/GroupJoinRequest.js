@@ -1,5 +1,6 @@
 import pool from '../config/database.js';
 import { findGroupById, findGroupByIdWithPassword } from './Group.js';
+import { getJoinMode } from '../utils/groupJoinMode.js';
 import { isUserMember, addUserToGroup, getGroupMembers } from './GroupMember.js';
 import { findUserById } from './User.js';
 import { createNotification } from './Notification.js';
@@ -33,8 +34,9 @@ export const getJoinPreview = async (groupId, userId) => {
         name: group.name,
         description: group.description,
         is_public: group.is_public,
-        requires_password: !group.is_public && !!group.join_password_hash,
-        requires_approval: !group.is_public && !group.join_password_hash,
+        join_mode: getJoinMode(group),
+        requires_password: getJoinMode(group) === 'password',
+        requires_approval: getJoinMode(group) === 'approval',
         is_member: isMember,
         has_pending_request: !!pendingRequest,
         pending_request: pendingRequest
