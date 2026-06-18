@@ -27,6 +27,7 @@ import {
   connectSocket,
   joinGroup,
   leaveGroup,
+  onSocketReconnect,
   onTaskCreated,
   onTaskUpdated,
   onTaskDeleted,
@@ -203,6 +204,8 @@ function GroupView() {
     if (!voiceChat.isInVoice && !voiceChat.isConnecting) {
       const joined = await voiceChat.join();
       if (!joined) {
+        setIsVoiceChatOpen(true);
+        focusVoiceChatWindow();
         return;
       }
     }
@@ -279,12 +282,24 @@ function GroupView() {
     const unsubscribers = [];
 
     const setupSocket = async () => {
-      await connectSocket();
-      
+      try {
+        await connectSocket();
+      } catch (error) {
+        console.warn('Initial socket connection delayed:', error.message);
+      }
+
       if (!mounted) return;
       
       joinGroup(groupIdInt);
       requestVoiceRoster(groupIdInt);
+
+      unsubscribers.push(onSocketReconnect(() => {
+        if (!mounted) {
+          return;
+        }
+        joinGroup(groupIdInt);
+        requestVoiceRoster(groupIdInt);
+      }));
 
       unsubscribers.push(onVoiceRosterUpdated((data) => {
         if (mounted && Number(data.groupId) === groupIdInt) {
@@ -941,6 +956,10 @@ function GroupView() {
               Leave Group
             </button>
 
+            {voiceChat.error && !voiceChat.isInVoice && !voiceChat.isConnecting && (
+              <p className={styles.voiceJoinError}>{voiceChat.error}</p>
+            )}
+
             <div className={styles.chatButtons}>
               <button
                 className={`${styles.chatButton} ${unreadMessageCount > 0 ? styles.chatButtonNotification : ''} ${unreadMentionCount > 0 ? styles.chatButtonMention : ''}`}
@@ -971,7 +990,11 @@ function GroupView() {
                       : 'Join voice and video chat'
                 }
               >
-                {voiceChat.isInVoice ? 'Open Voice Chat' : 'Enter Voice Chat'}
+                {voiceChat.isConnecting
+                  ? 'Connecting...'
+                  : voiceChat.isInVoice
+                    ? 'Open Voice Chat'
+                    : 'Enter Voice Chat'}
                 {(voiceParticipants.length > 0 || voiceChat.isInVoice) && (
                   <span className={styles.voiceBadge}>
                     {voiceParticipants.length > 99 ? '99+' : Math.max(voiceParticipants.length, voiceChat.isInVoice ? 1 : 0)}

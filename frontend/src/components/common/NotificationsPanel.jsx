@@ -5,7 +5,6 @@ import { notificationAPI } from '../../services/api';
 import {
   connectSocket,
   joinUser,
-  leaveUser,
   onNotificationReceived
 } from '../../services/socket';
 import { getUser } from '../../utils/auth';
@@ -68,7 +67,6 @@ function NotificationsPanel({ onNavigate }) {
 
     return () => {
       unsubscribe();
-      leaveUser(user.id);
     };
   }, [user?.id]);
 

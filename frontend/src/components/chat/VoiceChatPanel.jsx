@@ -219,9 +219,13 @@ function VoiceChatPanel({
       onClose={onMinimize}
       title="Voice & Video Chat"
       subtitle={
-        isInVoice
-          ? `${participants.length} teammate${participants.length === 1 ? '' : 's'} in voice · drag tile corners to resize`
-          : 'Connecting...'
+        error && !isInVoice
+          ? 'Could not join voice chat'
+          : isInVoice
+            ? `${participants.length} teammate${participants.length === 1 ? '' : 's'} in voice · drag tile corners to resize`
+            : isConnecting
+              ? 'Connecting...'
+              : 'Voice chat'
       }
       defaultPosition={{ x: 500, y: 88 }}
       defaultSize={{ width: 480, height: 620 }}

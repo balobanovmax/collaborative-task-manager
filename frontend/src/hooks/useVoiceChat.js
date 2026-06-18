@@ -86,8 +86,8 @@ export function useVoiceChat(groupId, user) {
     }
   }, []);
 
-  const toggleCamera = useCallback(() => {
-    const enabled = sessionRef.current?.toggleCamera();
+  const toggleCamera = useCallback(async () => {
+    const enabled = await sessionRef.current?.toggleCamera();
     if (typeof enabled === 'boolean') {
       setCameraEnabled(enabled);
     }

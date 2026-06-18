@@ -5,6 +5,33 @@ let socket = null;
 let connectionPromise = null;
 const subscribers = {};
 
+const sessionState = {
+    userId: null,
+    groupIds: new Set(),
+    reconnectHandlers: new Set()
+};
+
+const SOCKET_EVENTS = [
+    'task-created',
+    'task-updated',
+    'task-deleted',
+    'task-toggled',
+    'member-joined',
+    'member-removed',
+    'group-updated',
+    'message-sent',
+    'chat-cleared',
+    'chat-typing',
+    'notification-received',
+    'join-request-updated',
+    'task-comment-created',
+    'task-attachment-added',
+    'task-attachment-deleted',
+    'task-drawing-added',
+    'task-drawing-deleted',
+    'voice-roster-updated'
+];
+
 const getSubscriberSet = (event) => {
     if (!subscribers[event]) {
         subscribers[event] = new Set();
@@ -12,38 +39,95 @@ const getSubscriberSet = (event) => {
     return subscribers[event];
 };
 
-const ensureSocketFanOut = (event) => {
-    if (!socket || socket[`_fanOut_${event}`]) {
+const attachFanOutListeners = () => {
+    if (!socket) {
         return;
     }
 
-    socket[`_fanOut_${event}`] = true;
-    socket.on(event, (data) => {
-        getSubscriberSet(event).forEach((callback) => {
-            try {
-                callback(data);
-            } catch (error) {
-                console.error(`Error in ${event} listener:`, error);
-            }
+    SOCKET_EVENTS.forEach((event) => {
+        if (socket[`_fanOut_${event}`]) {
+            return;
+        }
+
+        socket[`_fanOut_${event}`] = true;
+        socket.on(event, (data) => {
+            getSubscriberSet(event).forEach((callback) => {
+                try {
+                    callback(data);
+                } catch (error) {
+                    console.error(`Error in ${event} listener:`, error);
+                }
+            });
         });
     });
 };
 
-const subscribe = (event, callback) => {
-    if (!socket) {
-        return () => {};
+const rejoinAllRooms = () => {
+    if (!socket?.connected) {
+        return;
     }
 
-    ensureSocketFanOut(event);
+    if (sessionState.userId) {
+        socket.emit('join-user', sessionState.userId);
+    }
+
+    sessionState.groupIds.forEach((groupId) => {
+        socket.emit('join-group', groupId);
+    });
+
+    sessionState.reconnectHandlers.forEach((handler) => {
+        try {
+            handler();
+        } catch (error) {
+            console.error('Socket reconnect handler error:', error);
+        }
+    });
+};
+
+const subscribe = (event, callback) => {
     getSubscriberSet(event).add(callback);
+
+    if (socket) {
+        attachFanOutListeners();
+    }
 
     return () => {
         getSubscriberSet(event).delete(callback);
     };
 };
 
+export const onSocketReconnect = (handler) => {
+    sessionState.reconnectHandlers.add(handler);
+    return () => {
+        sessionState.reconnectHandlers.delete(handler);
+    };
+};
+
+export const waitForSocketConnection = async (timeoutMs = 20000) => {
+    await connectSocket();
+
+    if (socket?.connected) {
+        return socket;
+    }
+
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            socket?.off('connect', onConnect);
+            reject(new Error('Unable to connect to real-time server. Check your connection and try again.'));
+        }, timeoutMs);
+
+        const onConnect = () => {
+            clearTimeout(timer);
+            socket?.off('connect', onConnect);
+            resolve(socket);
+        };
+
+        socket?.once('connect', onConnect);
+    });
+};
+
 export const connectSocket = () => {
-    if (socket && socket.connected) {
+    if (socket?.connected) {
         return Promise.resolve(socket);
     }
 
@@ -51,25 +135,62 @@ export const connectSocket = () => {
         return connectionPromise;
     }
 
-    connectionPromise = new Promise((resolve) => {
+    if (socket && !socket.connected) {
+        connectionPromise = new Promise((resolve, reject) => {
+            const connectTimeoutMs = 20000;
+            const timer = setTimeout(() => {
+                socket?.off('connect', onConnect);
+                connectionPromise = null;
+                reject(new Error('Unable to connect to real-time server.'));
+            }, connectTimeoutMs);
+
+            const onConnect = () => {
+                clearTimeout(timer);
+                socket?.off('connect', onConnect);
+                rejoinAllRooms();
+                resolve(socket);
+            };
+
+            socket.once('connect', onConnect);
+        });
+
+        return connectionPromise;
+    }
+
+    connectionPromise = new Promise((resolve, reject) => {
         const socketUrl = getSocketUrl();
         console.log('Connecting to socket...', socketUrl || '(same origin)');
 
         const socketOptions = {
-            transports: ['polling', 'websocket'],
+            transports: ['websocket', 'polling'],
             reconnection: true,
-            reconnectionAttempts: 10,
+            reconnectionAttempts: Infinity,
             reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
             timeout: 20000,
             path: '/socket.io',
             withCredentials: true
         };
 
         socket = socketUrl ? io(socketUrl, socketOptions) : io(socketOptions);
+        attachFanOutListeners();
+
+        let connectTimeoutId;
+
+        const finishConnect = () => {
+            clearTimeout(connectTimeoutId);
+            rejoinAllRooms();
+            resolve(socket);
+        };
 
         socket.on('connect', () => {
             console.log('Socket connected:', socket.id);
-            resolve(socket);
+            finishConnect();
+        });
+
+        socket.io.on('reconnect', (attemptNumber) => {
+            console.log('Socket reconnected after', attemptNumber, 'attempts');
+            rejoinAllRooms();
         });
 
         socket.on('disconnect', (reason) => {
@@ -80,16 +201,16 @@ export const connectSocket = () => {
             console.error('Socket connection error:', error.message);
         });
 
-        socket.on('reconnect', (attemptNumber) => {
-            console.log('Socket reconnected after', attemptNumber, 'attempts');
-        });
-
-        setTimeout(() => {
+        const connectTimeoutMs = 20000;
+        connectTimeoutId = setTimeout(() => {
             if (!socket.connected) {
-                console.log('Socket connection timeout, resolving anyway');
-                resolve(socket);
+                connectionPromise = null;
+                reject(new Error('Unable to connect to real-time server.'));
             }
-        }, 5000);
+        }, connectTimeoutMs);
+    }).catch((error) => {
+        connectionPromise = null;
+        throw error;
     });
 
     return connectionPromise;
@@ -100,40 +221,69 @@ export const disconnectSocket = () => {
         socket.disconnect();
         socket = null;
         connectionPromise = null;
+        sessionState.userId = null;
+        sessionState.groupIds.clear();
+        sessionState.reconnectHandlers.clear();
     }
 };
 
-export const getSocket = () => {
-    return socket;
-};
+export const getSocket = () => socket;
+
+export const isSocketConnected = () => Boolean(socket?.connected);
 
 export const joinUser = (userId) => {
-    if (socket && userId) {
-        socket.emit('join-user', userId);
+    const id = Number(userId);
+    if (!id) {
+        return;
+    }
+
+    sessionState.userId = id;
+
+    if (socket?.connected) {
+        socket.emit('join-user', id);
     }
 };
 
 export const leaveUser = (userId) => {
-    if (socket && userId) {
-        socket.emit('leave-user', userId);
+    const id = Number(userId);
+    if (sessionState.userId === id) {
+        sessionState.userId = null;
+    }
+
+    if (socket && id) {
+        socket.emit('leave-user', id);
     }
 };
 
 export const joinGroup = (groupId) => {
-    if (socket) {
-        socket.emit('join-group', groupId);
-        console.log('Joining group:', groupId);
+    const id = Number(groupId);
+    if (!id) {
+        return;
+    }
+
+    sessionState.groupIds.add(id);
+
+    if (socket?.connected) {
+        socket.emit('join-group', id);
+        console.log('Joining group:', id);
     }
 };
 
 export const leaveGroup = (groupId) => {
+    const id = Number(groupId);
+    if (!id) {
+        return;
+    }
+
+    sessionState.groupIds.delete(id);
+
     if (socket) {
-        socket.emit('leave-group', groupId);
+        socket.emit('leave-group', id);
     }
 };
 
 export const emitChatTyping = (groupId, userId, username, isTyping) => {
-    if (socket && groupId && userId && username) {
+    if (socket?.connected && groupId && userId && username) {
         socket.emit('chat-typing', {
             groupId,
             userId,

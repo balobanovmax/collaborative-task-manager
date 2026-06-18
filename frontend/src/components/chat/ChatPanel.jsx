@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import styles from './ChatPanel.module.css';
 import { messageAPI } from '../../services/api';
-import { onMessageSent, onChatCleared, onChatTyping, emitChatTyping } from '../../services/socket';
+import { onMessageSent, onChatCleared, onChatTyping, emitChatTyping, onSocketReconnect } from '../../services/socket';
 import { getUser } from '../../utils/auth';
 import {
   renderMessageWithMentions,
@@ -175,15 +175,11 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner = false, members = [], zI
     }
 
     const unsubscribeMessage = onMessageSent((data) => {
-      if (data.message.group_id !== groupId) {
+      if (Number(data.message.group_id) !== Number(groupId)) {
         return;
       }
 
-      setMessages(prevMessages => {
-        const exists = prevMessages.some(m => m.id === data.message.id);
-        if (exists) return prevMessages;
-        return [...prevMessages, data.message];
-      });
+      appendMessage(data.message);
     });
 
     const unsubscribeClear = onChatCleared((data) => {
@@ -229,18 +225,59 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner = false, members = [], zI
     };
   }, [isOpen, groupId, currentUser?.id]);
 
-  const fetchMessages = async () => {
+  const fetchMessages = async ({ silent = false } = {}) => {
     try {
-      setIsLoading(true);
+      if (!silent) {
+        setIsLoading(true);
+      }
       setError('');
       const response = await messageAPI.getMessages(groupId);
       setMessages(response.data.messages || []);
     } catch (err) {
       setError('Failed to load messages');
     } finally {
-      setIsLoading(false);
+      if (!silent) {
+        setIsLoading(false);
+      }
     }
   };
+
+  const appendMessage = (message) => {
+    if (!message) {
+      return;
+    }
+
+    setMessages((prevMessages) => {
+      const exists = prevMessages.some((entry) => entry.id === message.id);
+      if (exists) {
+        return prevMessages;
+      }
+      return [...prevMessages, message];
+    });
+  };
+
+  useEffect(() => {
+    if (!isOpen || !groupId) {
+      return undefined;
+    }
+
+    const unsubscribeReconnect = onSocketReconnect(() => {
+      fetchMessages({ silent: true });
+    });
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchMessages({ silent: true });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      unsubscribeReconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isOpen, groupId]);
 
   const handleInputChange = (e) => {
     const value = e.target.value;
@@ -312,7 +349,8 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner = false, members = [], zI
     try {
       setIsSending(true);
       setError('');
-      await messageAPI.sendMessage(groupId, messageToSend);
+      const response = await messageAPI.sendMessage(groupId, messageToSend);
+      appendMessage(response.data?.message);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send message');
       setNewMessage(messageToSend);
@@ -466,12 +504,13 @@ function ChatPanel({ groupId, isOpen, onClose, isOwner = false, members = [], zI
     try {
       setIsSendingVoice(true);
       setError('');
-      await messageAPI.sendVoiceMessage(
+      const response = await messageAPI.sendVoiceMessage(
         groupId,
         voicePreview.blob,
         voicePreview.duration,
         filename
       );
+      appendMessage(response.data?.message);
       revokeVoicePreview(voicePreview);
       setVoicePreview(null);
     } catch (err) {

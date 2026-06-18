@@ -4,6 +4,7 @@ import styles from './Navbar.module.css';
 import UserAvatar from './UserAvatar';
 import NotificationsPanel from './NotificationsPanel';
 import { isAuthenticated, logout, getUser } from '../../utils/auth';
+import { connectSocket, joinUser } from '../../services/socket';
 import { useTheme } from '../../context/ThemeContext';
 
 function Navbar() {
@@ -13,6 +14,28 @@ function Navbar() {
   const [user, setUser] = useState(getUser());
   const [menuOpen, setMenuOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
+
+  useEffect(() => {
+    if (!loggedIn || !user?.id) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    connectSocket()
+      .then(() => {
+        if (!cancelled) {
+          joinUser(user.id);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to connect socket session:', error.message);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loggedIn, user?.id]);
 
   useEffect(() => {
     const handleUserUpdated = (event) => {

@@ -96,6 +96,9 @@ export const registerVoiceHandlers = (io) => {
 
             socket.data.userId = userId;
 
+            // Keep user room in sync for voice signaling after reconnects.
+            socket.join(`user-${userId}`);
+
             const existingParticipants = listVoiceParticipants(groupId).filter(
                 (entry) => entry.user_id !== userId
             );
@@ -183,11 +186,12 @@ export const registerVoiceHandlers = (io) => {
             const room = voiceRooms.get(String(groupId));
             const target = room?.get(toUserId);
 
-            if (!target?.socket_id) {
+            if (!target) {
                 return;
             }
 
-            io.to(target.socket_id).emit('voice-signal', {
+            // Route by user room so signals survive socket reconnects (new socket.id).
+            io.to(`user-${toUserId}`).emit('voice-signal', {
                 groupId,
                 fromUserId,
                 signal: payload.signal
