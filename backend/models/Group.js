@@ -4,8 +4,7 @@ import { getJoinMode, validateJoinMode } from '../utils/groupJoinMode.js';
 
 const validateGroupInput = (name, description = '') => {
     const errors = [];
-    
-    // Group name validation
+
     if (!name || name.trim().length === 0) {
         errors.push('Group name is required');
     } else if (name.length < 3) {
@@ -13,12 +12,11 @@ const validateGroupInput = (name, description = '') => {
     } else if (name.length > 100) {
         errors.push('Group name must be less than 100 characters');
     }
-    
-    // Description validation (optional)
+
     if (description && description.length > 500) {
         errors.push('Description must be less than 500 characters');
     }
-    
+
     return errors;
 };
 
@@ -28,21 +26,21 @@ export const createGroup = async (name, ownerId, description = '', joinMode = 'p
         if (validationErrors.length > 0) {
             throw new Error(`Validation failed: ${validationErrors.join(', ')}`);
         }
-        
+
         if (!ownerId || typeof ownerId !== 'number') {
             throw new Error('Valid owner ID is required');
         }
 
         const normalizedJoinMode = validateJoinMode(joinMode);
-        
+
         const normalizedName = name.trim();
         const normalizedDescription = description ? description.trim() : '';
-        
+
         const existingGroup = await groupNameExistsForOwner(normalizedName, ownerId);
         if (existingGroup) {
             throw new Error('You already have a group with this name');
         }
-        
+
         const isPublic = normalizedJoinMode === 'public';
         let joinPasswordHash = null;
 
@@ -52,25 +50,25 @@ export const createGroup = async (name, ownerId, description = '', joinMode = 'p
             }
             joinPasswordHash = await hashPassword(joinPassword.trim());
         }
-        
+
         const query = `
             INSERT INTO groups (name, owner_id, description, is_public, join_password_hash, created_at)
             VALUES ($1, $2, $3, $4, $5, NOW())
             RETURNING id, name, owner_id, description, is_public, created_at
         `;
-        
+
         const values = [normalizedName, ownerId, normalizedDescription, isPublic, joinPasswordHash];
         const result = await pool.query(query, values);
-        
+
         if (!result.rows || result.rows.length === 0) {
             throw new Error('Group creation failed - no data returned');
         }
-        
+
         const newGroup = result.rows[0];
         console.log('Group created successfully:', newGroup.id);
-        
+
         return newGroup;
-        
+
     } catch (error) {
         if (error.code === '23505') {
             throw new Error('Group name already exists');
@@ -80,7 +78,7 @@ export const createGroup = async (name, ownerId, description = '', joinMode = 'p
             throw new Error('Required field is missing');
         } else if (error.code === '22001') {
             throw new Error('Input data is too long');
-        } else if (error.message.includes('Validation failed') || 
+        } else if (error.message.includes('Validation failed') ||
                    error.message.includes('already have a group') ||
                    error.message.includes('Valid owner ID')) {
             throw error;
@@ -96,21 +94,21 @@ export const findGroupById = async (groupId) => {
         if (!groupId || typeof groupId !== 'number') {
             throw new Error('Valid group ID is required');
         }
-        
+
         const query = `
             SELECT id, name, owner_id, description, is_public, created_at
-            FROM groups 
+            FROM groups
             WHERE id = $1
         `;
-        
+
         const result = await pool.query(query, [groupId]);
-        
+
         if (result.rows.length === 0) {
-            return null; // Group not found
+            return null;
         }
-        
+
         return result.rows[0];
-        
+
     } catch (error) {
         if (error.message.includes('Valid group ID')) {
             throw error;
@@ -125,21 +123,21 @@ export const findGroupByIdWithPassword = async (groupId) => {
         if (!groupId || typeof groupId !== 'number') {
             throw new Error('Valid group ID is required');
         }
-        
+
         const query = `
             SELECT id, name, owner_id, description, is_public, created_at, join_password_hash
-            FROM groups 
+            FROM groups
             WHERE id = $1
         `;
-        
+
         const result = await pool.query(query, [groupId]);
-        
+
         if (result.rows.length === 0) {
-            return null; // Group not found
+            return null;
         }
-        
+
         return result.rows[0];
-        
+
     } catch (error) {
         if (error.message.includes('Valid group ID')) {
             throw error;
@@ -154,19 +152,19 @@ export const groupNameExistsForOwner = async (name, ownerId) => {
         if (!name || typeof name !== 'string') {
             return false;
         }
-        
+
         if (!ownerId || typeof ownerId !== 'number') {
             return false;
         }
-        
+
         const normalizedName = name.trim();
         const query = 'SELECT id FROM groups WHERE name = $1 AND owner_id = $2';
         const result = await pool.query(query, [normalizedName, ownerId]);
-        
+
         return result.rows.length > 0;
     } catch (error) {
         console.error('Error checking group name existence:', error);
-        return false; // Assume doesn't exist on error
+        return false;  // Assume doesn't exist on error
     }
 };
 
@@ -176,89 +174,86 @@ export const groupExists = async (groupId) => {
         return group !== null;
     } catch (error) {
         console.error('Error checking group existence:', error);
-        return false; // Assume doesn't exist on error
+        return false;  // Assume doesn't exist on error
     }
 };
 
 export const deleteGroup = async (groupId, ownerId) => {
     try {
-        // Input validation
+
         if (!groupId || typeof groupId !== 'number' || groupId <= 0) {
             throw new Error('Valid group ID is required');
         }
-        
+
         if (!ownerId || typeof ownerId !== 'number' || ownerId <= 0) {
             throw new Error('Valid owner ID is required');
         }
-        
-        // Check if group exists and user is the owner
+
         const group = await findGroupById(groupId);
         if (!group) {
             throw new Error('Group not found');
         }
-        
+
         if (group.owner_id !== ownerId) {
             throw new Error('Only group owner can delete the group');
         }
-        
+
         // Delete the group (CASCADE will handle group_members and tasks)
         const query = 'DELETE FROM groups WHERE id = $1 AND owner_id = $2';
         const result = await pool.query(query, [groupId, ownerId]);
-        
+
         if (result.rowCount === 0) {
             throw new Error('Failed to delete group');
         }
-        
+
         console.log(`Group ${groupId} successfully deleted by owner ${ownerId}`);
         return true;
-        
+
     } catch (error) {
         console.error('Error deleting group:', error);
-        throw error; // Re-throw to handle in route
+        throw error;
     }
 };
 
 export const verifyGroupPassword = async (groupId, plainPassword) => {
     try {
-        // Input validation
+
         if (!groupId || typeof groupId !== 'number' || groupId <= 0) {
             throw new Error('Valid group ID is required');
         }
-        
-        // Find the group
+
         const group = await findGroupByIdWithPassword(groupId);
         if (!group) {
             throw new Error('Group not found');
         }
-        
+
         // If group is public, no password needed
         if (group.is_public) {
             return true;
         }
-        
+
         // If private group has no join password, require owner approval
         if (!group.join_password_hash) {
             throw new Error('This private group requires owner approval to join.');
         }
-        
+
         // If password is required but not provided
         if (!plainPassword || typeof plainPassword !== 'string') {
             throw new Error('Password is required to join this private group');
         }
-        
-        // Verify password using bcrypt
+
         const { comparePassword } = await import('../utils/passwordHash.js');
         const isValidPassword = await comparePassword(plainPassword, group.join_password_hash);
-        
+
         if (!isValidPassword) {
             throw new Error('Incorrect group password');
         }
-        
+
         return true;
-        
+
     } catch (error) {
         console.error('Error verifying group password:', error);
-        throw error; // Re-throw to handle in route
+        throw error;
     }
 };
 
@@ -267,35 +262,35 @@ export const getGroupsByOwner = async (ownerId) => {
         if (!ownerId || typeof ownerId !== 'number' || ownerId <= 0) {
             throw new Error('Valid owner ID is required');
         }
-        
+
         const { findUserById } = await import('./User.js');
         const user = await findUserById(ownerId);
         if (!user) {
             throw new Error('User not found');
         }
-        
+
         const query = `
-            SELECT 
-                g.id, 
-                g.name, 
-                g.description, 
-                g.is_public, 
+            SELECT
+                g.id,
+                g.name,
+                g.description,
+                g.is_public,
                 g.created_at,
                 g.owner_id,
                 (
-                    SELECT COUNT(*) 
-                    FROM group_members gm 
+                    SELECT COUNT(*)
+                    FROM group_members gm
                     WHERE gm.group_id = g.id
                 ) as member_count
             FROM groups g
-            WHERE g.owner_id = $1 
+            WHERE g.owner_id = $1
             ORDER BY g.created_at DESC
         `;
-        
+
         const result = await pool.query(query, [ownerId]);
-        
+
         return result.rows;
-        
+
     } catch (error) {
         console.error('Error getting groups by owner:', error);
         throw error;
@@ -307,41 +302,41 @@ export const updateGroup = async (groupId, ownerId, updateData) => {
         if (!groupId || typeof groupId !== 'number' || groupId <= 0) {
             throw new Error('Valid group ID is required');
         }
-        
+
         if (!ownerId || typeof ownerId !== 'number' || ownerId <= 0) {
             throw new Error('Valid owner ID is required');
         }
-        
+
         const group = await findGroupById(groupId);
         if (!group) {
             throw new Error('Group not found');
         }
-        
+
         if (group.owner_id !== ownerId) {
             throw new Error('Only group owner can update the group');
         }
 
         const existingGroupWithPassword = await findGroupByIdWithPassword(groupId);
-        
+
         const { name, description, join_mode, join_password, is_public } = updateData;
-        
+
         if (name !== undefined) {
             const validationErrors = validateGroupInput(name, description !== undefined ? description : group.description);
             if (validationErrors.length > 0) {
                 throw new Error(validationErrors.join(', '));
             }
         }
-        
+
         const fieldsToUpdate = [];
         const values = [];
         let paramCount = 1;
-        
+
         if (name !== undefined) {
             fieldsToUpdate.push(`name = $${paramCount}`);
             values.push(name.trim());
             paramCount++;
         }
-        
+
         if (description !== undefined) {
             fieldsToUpdate.push(`description = $${paramCount}`);
             values.push(description ? description.trim() : '');
@@ -403,28 +398,28 @@ export const updateGroup = async (groupId, ownerId, updateData) => {
             values.push(joinPasswordHash);
             paramCount++;
         }
-        
+
         if (fieldsToUpdate.length === 0) {
             throw new Error('No fields to update');
         }
-        
+
         values.push(groupId);
-        
+
         const query = `
-            UPDATE groups 
+            UPDATE groups
             SET ${fieldsToUpdate.join(', ')}
             WHERE id = $${paramCount}
             RETURNING id, name, owner_id, description, is_public, created_at
         `;
-        
+
         const result = await pool.query(query, values);
-        
+
         if (result.rows.length === 0) {
             throw new Error('Failed to update group');
         }
-        
+
         return result.rows[0];
-        
+
     } catch (error) {
         console.error('Error updating group:', error);
         throw error;
@@ -481,5 +476,4 @@ export const transferGroupOwnership = async (groupId, currentOwnerId, newOwnerId
         throw error;
     }
 };
-
 

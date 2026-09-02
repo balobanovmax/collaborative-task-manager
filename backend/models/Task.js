@@ -124,8 +124,7 @@ export const validateTaskPriority = (priority) => {
 
 export const validateTaskInput = (title, description, dueDate) => {
     const errors = [];
-    
-    // Validate title (required)
+
     if (!title) {
         errors.push('Title is required.');
     } else if (typeof title !== 'string') {
@@ -135,8 +134,7 @@ export const validateTaskInput = (title, description, dueDate) => {
     } else if (title.trim().length > 255) {
         errors.push('Title cannot exceed 255 characters.');
     }
-    
-    // Validate description (optional)
+
     if (description !== undefined && description !== null) {
         if (typeof description !== 'string') {
             errors.push('Description must be a string.');
@@ -144,12 +142,10 @@ export const validateTaskInput = (title, description, dueDate) => {
             errors.push('Description cannot exceed 5000 characters.');
         }
     }
-    
-    // Validate due date (optional)
+
     if (dueDate !== undefined && dueDate !== null) {
         let dateToValidate;
-        
-        // Handle string dates
+
         if (typeof dueDate === 'string') {
             if (dueDate.trim() === '') {
                 // Empty string is valid (means no due date)
@@ -162,19 +158,18 @@ export const validateTaskInput = (title, description, dueDate) => {
         } else {
             errors.push('Due date must be a valid date string or Date object.');
         }
-        
-        // Validate the date is valid and not in the past
+
         if (dateToValidate && isNaN(dateToValidate.getTime())) {
             errors.push('Due date must be a valid date.');
         } else if (dateToValidate && dateToValidate < new Date()) {
             errors.push('Due date cannot be in the past.');
         }
     }
-    
+
     return {
         isValid: errors.length === 0,
         errors: errors,
-        // Return cleaned data
+
         cleanedData: {
             title: (title && typeof title === 'string') ? title.trim() : null,
             description: (description && typeof description === 'string') ? description.trim() : null,
@@ -185,58 +180,53 @@ export const validateTaskInput = (title, description, dueDate) => {
 
 export const createTask = async (groupId, createdBy, title, description, dueDate, assignedTo = null, priority = 'medium') => {
     try {
-        // Validate required parameters
+
         if (!groupId || isNaN(groupId) || groupId <= 0) {
             throw new Error('Invalid group ID. Must be a positive number.');
         }
-        
+
         if (!createdBy || isNaN(createdBy) || createdBy <= 0) {
             throw new Error('Invalid user ID. Must be a positive number.');
         }
-        
-        // Validate task input data
+
         const validation = validateTaskInput(title, description, dueDate);
         if (!validation.isValid) {
             throw new Error(validation.errors.join(' '));
         }
-        
+
         const { title: cleanTitle, description: cleanDescription, dueDate: cleanDueDate } = validation.cleanedData;
-        
-        // Check if group exists
+
         const groupCheck = await pool.query('SELECT id FROM groups WHERE id = $1', [groupId]);
         if (groupCheck.rows.length === 0) {
             throw new Error(`Group with ID ${groupId} not found.`);
         }
-        
-        // Check if user is a member of the group (or owner)
+
         const memberCheck = await pool.query(`
-            SELECT gm.user_id, g.owner_id 
+            SELECT gm.user_id, g.owner_id
             FROM groups g
             LEFT JOIN group_members gm ON g.id = gm.group_id AND gm.user_id = $1
             WHERE g.id = $2
         `, [createdBy, groupId]);
-        
+
         if (memberCheck.rows.length === 0) {
             throw new Error('Group not found.');
         }
-        
+
         const { user_id: memberUserId, owner_id: groupOwnerId } = memberCheck.rows[0];
-        
-        // User must be either a member or the group owner
+
         if (!memberUserId && createdBy !== groupOwnerId) {
             throw new Error('You must be a member of this group to create tasks.');
         }
 
         const validatedAssignee = await validateTaskAssignee(groupId, assignedTo);
         const validatedPriority = validateTaskPriority(priority);
-        
-        // Insert the new task
+
         const insertQuery = `
             INSERT INTO tasks (group_id, title, description, created_by, due_date, assigned_to, priority)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id
         `;
-        
+
         const result = await pool.query(insertQuery, [
             groupId,
             cleanTitle,
@@ -261,7 +251,7 @@ export const createTask = async (groupId, createdBy, title, description, dueDate
         }
 
         return task;
-        
+
     } catch (error) {
         console.error('Error creating task:', error);
         throw error;
@@ -270,14 +260,13 @@ export const createTask = async (groupId, createdBy, title, description, dueDate
 
 export const findTaskById = async (taskId) => {
     try {
-        // Validate task ID
+
         if (!taskId || isNaN(taskId) || taskId <= 0) {
             throw new Error('Invalid task ID. Must be a positive number.');
         }
-        
-        // Query to get task with creator and completer details
+
         const query = `
-            SELECT 
+            SELECT
                 ${TASK_SELECT_FIELDS},
                 g.name as group_name,
                 ${TASK_COUNT_FIELDS}
@@ -288,15 +277,15 @@ export const findTaskById = async (taskId) => {
             LEFT JOIN groups g ON t.group_id = g.id
             WHERE t.id = $1
         `;
-        
+
         const result = await pool.query(query, [taskId]);
-        
+
         if (result.rows.length === 0) {
             return null;
         }
-        
+
         return formatTaskFromRow(result.rows[0]);
-        
+
     } catch (error) {
         console.error('Error finding task by ID:', error);
         throw error;
@@ -305,20 +294,18 @@ export const findTaskById = async (taskId) => {
 
 export const getTasksByGroup = async (groupId, options = {}) => {
     try {
-        // Validate group ID
+
         if (!groupId || isNaN(groupId) || groupId <= 0) {
             throw new Error('Invalid group ID. Must be a positive number.');
         }
-        
-        // Check if group exists
+
         const groupCheck = await pool.query('SELECT id, name FROM groups WHERE id = $1', [groupId]);
         if (groupCheck.rows.length === 0) {
             throw new Error(`Group with ID ${groupId} not found.`);
         }
-        
+
         const groupInfo = groupCheck.rows[0];
-        
-        // Extract options with defaults
+
         const {
             completedOnly = false,
             pendingOnly = false,
@@ -333,20 +320,18 @@ export const getTasksByGroup = async (groupId, options = {}) => {
             sortBy = 'created_at',
             sortOrder = 'DESC'
         } = options;
-        
-        // Validate sort options
+
         const validSortFields = ['created_at', 'due_date', 'title', 'is_completed', 'status', 'priority'];
         const validSortOrders = ['ASC', 'DESC'];
-        
+
         if (!validSortFields.includes(sortBy)) {
             throw new Error(`Invalid sort field. Must be one of: ${validSortFields.join(', ')}`);
         }
-        
+
         if (!validSortOrders.includes(sortOrder.toUpperCase())) {
             throw new Error('Invalid sort order. Must be ASC or DESC.');
         }
-        
-        // Build WHERE clause based on filters
+
         let whereClause = 'WHERE t.group_id = $1';
         const queryValues = [groupId];
 
@@ -400,13 +385,13 @@ export const getTasksByGroup = async (groupId, options = {}) => {
             queryValues.push(parsedAssignedTo);
             whereClause += ` AND t.assigned_to = $${queryValues.length}`;
         }
-        
+
         const orderClause = sortBy === 'priority'
             ? `ORDER BY ${PRIORITY_ORDER_SQL} ${sortOrder.toUpperCase()}, t.created_at DESC`
             : `ORDER BY t.${sortBy} ${sortOrder.toUpperCase()}`;
-        
+
         const query = `
-            SELECT 
+            SELECT
                 ${TASK_SELECT_FIELDS},
                 ${TASK_COUNT_FIELDS}
             FROM tasks t
@@ -416,12 +401,11 @@ export const getTasksByGroup = async (groupId, options = {}) => {
             ${whereClause}
             ${orderClause}
         `;
-        
+
         const result = await pool.query(query, queryValues);
-        
+
         const tasks = result.rows.map((task) => formatTaskFromRow(task, { group_name: groupInfo.name }));
-        
-        // Calculate task statistics
+
         const totalTasks = tasks.length;
         const todoTasks = tasks.filter((task) => (task.status || 'todo') === 'todo').length;
         const doingTasks = tasks.filter((task) => task.status === 'doing').length;
@@ -429,7 +413,7 @@ export const getTasksByGroup = async (groupId, options = {}) => {
         const overdueTasks = tasks.filter((task) =>
             isTaskOverdueByDate(task.due_date, task.status || (task.is_completed ? 'done' : 'todo'))
         ).length;
-        
+
         return {
             group_id: groupId,
             group_name: groupInfo.name,
@@ -444,7 +428,7 @@ export const getTasksByGroup = async (groupId, options = {}) => {
             },
             tasks: tasks
         };
-        
+
     } catch (error) {
         console.error('Error getting tasks by group:', error);
         throw error;
@@ -453,23 +437,21 @@ export const getTasksByGroup = async (groupId, options = {}) => {
 
 export const updateTask = async (taskId, userId, updateData) => {
     try {
-        // Validate task ID
+
         if (!taskId || isNaN(taskId) || taskId <= 0) {
             throw new Error('Invalid task ID. Must be a positive number.');
         }
-        
-        // Validate user ID
+
         if (!userId || isNaN(userId) || userId <= 0) {
             throw new Error('Invalid user ID. Must be a positive number.');
         }
-        
-        // Validate update data
+
         if (!updateData || typeof updateData !== 'object') {
             throw new Error('Update data is required and must be an object.');
         }
-        
+
         const { title, description, due_date, assigned_to, priority } = updateData;
-        
+
         const hasContentUpdate = title !== undefined || description !== undefined || due_date !== undefined;
         const hasAssigneeUpdate = assigned_to !== undefined;
         const hasPriorityUpdate = priority !== undefined;
@@ -477,11 +459,10 @@ export const updateTask = async (taskId, userId, updateData) => {
         if (!hasContentUpdate && !hasAssigneeUpdate && !hasPriorityUpdate) {
             throw new Error('At least one field must be provided for update.');
         }
-        
-        // Get the existing task with group info
+
         const taskQuery = `
-            SELECT 
-                t.*, 
+            SELECT
+                t.*,
                 g.owner_id as group_owner_id,
                 g.name as group_name
             FROM tasks t
@@ -489,35 +470,33 @@ export const updateTask = async (taskId, userId, updateData) => {
             WHERE t.id = $1
         `;
         const taskResult = await pool.query(taskQuery, [taskId]);
-        
+
         if (taskResult.rows.length === 0) {
             throw new Error(`Task with ID ${taskId} not found.`);
         }
-        
+
         const existingTask = taskResult.rows[0];
-        
-        // Check if user is a member of the group
+
         const membershipQuery = `
-            SELECT user_id FROM group_members 
+            SELECT user_id FROM group_members
             WHERE group_id = $1 AND user_id = $2
         `;
         const membershipResult = await pool.query(membershipQuery, [existingTask.group_id, userId]);
-        
+
         if (membershipResult.rows.length === 0 && existingTask.group_owner_id !== userId) {
             throw new Error('You must be a member of the group to update tasks.');
         }
-        
+
         const isTaskCreator = existingTask.created_by === userId;
         const isGroupOwner = existingTask.group_owner_id === userId;
-        
+
         if (hasContentUpdate && !isTaskCreator && !isGroupOwner) {
             throw new Error('You can only update tasks you created or if you are the group owner.');
         }
-        
+
         // Validate the update data (different from create - fields are optional)
         const errors = [];
-        
-        // Validate title (only if provided)
+
         if (title !== undefined) {
             if (title === null) {
                 errors.push('Title cannot be null.');
@@ -529,8 +508,7 @@ export const updateTask = async (taskId, userId, updateData) => {
                 errors.push('Title cannot exceed 255 characters.');
             }
         }
-        
-        // Validate description (only if provided)
+
         if (description !== undefined) {
             if (description !== null && typeof description !== 'string') {
                 errors.push('Description must be a string.');
@@ -538,12 +516,11 @@ export const updateTask = async (taskId, userId, updateData) => {
                 errors.push('Description cannot exceed 5000 characters.');
             }
         }
-        
-        // Validate due date (only if provided)
+
         if (due_date !== undefined) {
             if (due_date !== null) {
                 let dateToValidate;
-                
+
                 if (typeof due_date === 'string') {
                     if (due_date.trim() === '') {
                         dateToValidate = null;
@@ -555,7 +532,7 @@ export const updateTask = async (taskId, userId, updateData) => {
                 } else {
                     errors.push('Due date must be a valid date string or Date object.');
                 }
-                
+
                 if (dateToValidate && isNaN(dateToValidate.getTime())) {
                     errors.push('Due date must be a valid date.');
                 }
@@ -571,12 +548,11 @@ export const updateTask = async (taskId, userId, updateData) => {
         if (hasPriorityUpdate) {
             validatedPriority = validateTaskPriority(priority);
         }
-        
+
         if (errors.length > 0) {
             throw new Error(errors.join(' '));
         }
-        
-        // Clean the data
+
         const cleanedData = {};
         if (title !== undefined) {
             cleanedData.title = title ? title.trim() : null;
@@ -591,24 +567,23 @@ export const updateTask = async (taskId, userId, updateData) => {
                 cleanedData.dueDate = typeof due_date === 'string' ? new Date(due_date) : due_date;
             }
         }
-        
-        // Build the update query dynamically
+
         const fieldsToUpdate = [];
         const queryValues = [];
         let paramCounter = 1;
-        
+
         if (title !== undefined) {
             fieldsToUpdate.push(`title = $${paramCounter}`);
             queryValues.push(cleanedData.title);
             paramCounter++;
         }
-        
+
         if (description !== undefined) {
             fieldsToUpdate.push(`description = $${paramCounter}`);
             queryValues.push(cleanedData.description);
             paramCounter++;
         }
-        
+
         if (due_date !== undefined) {
             fieldsToUpdate.push(`due_date = $${paramCounter}`);
             queryValues.push(cleanedData.dueDate);
@@ -626,16 +601,16 @@ export const updateTask = async (taskId, userId, updateData) => {
             queryValues.push(validatedPriority);
             paramCounter++;
         }
-        
+
         queryValues.push(taskId);
-        
+
         const updateQuery = `
-            UPDATE tasks 
+            UPDATE tasks
             SET ${fieldsToUpdate.join(', ')}
             WHERE id = $${paramCounter}
             RETURNING id
         `;
-        
+
         await pool.query(updateQuery, queryValues);
 
         if (title !== undefined && cleanedData.title !== existingTask.title) {
@@ -679,9 +654,9 @@ export const updateTask = async (taskId, userId, updateData) => {
                 new_value: validatedPriority
             });
         }
-        
+
         return findTaskById(taskId);
-        
+
     } catch (error) {
         console.error('Error updating task:', error);
         throw error;
@@ -690,20 +665,18 @@ export const updateTask = async (taskId, userId, updateData) => {
 
 export const deleteTask = async (taskId, userId) => {
     try {
-        // Validate task ID
+
         if (!taskId || isNaN(taskId) || taskId <= 0) {
             throw new Error('Invalid task ID. Must be a positive number.');
         }
-        
-        // Validate user ID
+
         if (!userId || isNaN(userId) || userId <= 0) {
             throw new Error('Invalid user ID. Must be a positive number.');
         }
-        
-        // Get the task with group info to check permissions
+
         const taskQuery = `
-            SELECT 
-                t.*, 
+            SELECT
+                t.*,
                 g.owner_id as group_owner_id,
                 g.name as group_name,
                 u_creator.username as creator_username
@@ -713,33 +686,31 @@ export const deleteTask = async (taskId, userId) => {
             WHERE t.id = $1
         `;
         const taskResult = await pool.query(taskQuery, [taskId]);
-        
+
         if (taskResult.rows.length === 0) {
             throw new Error(`Task with ID ${taskId} not found.`);
         }
-        
+
         const task = taskResult.rows[0];
-        
-        // Check if user is a member of the group
+
         const membershipQuery = `
-            SELECT user_id FROM group_members 
+            SELECT user_id FROM group_members
             WHERE group_id = $1 AND user_id = $2
         `;
         const membershipResult = await pool.query(membershipQuery, [task.group_id, userId]);
-        
+
         if (membershipResult.rows.length === 0) {
             throw new Error('You must be a member of the group to delete tasks.');
         }
-        
+
         // Check permissions: must be task creator OR group owner
         const isTaskCreator = task.created_by === userId;
         const isGroupOwner = task.group_owner_id === userId;
-        
+
         if (!isTaskCreator && !isGroupOwner) {
             throw new Error('You can only delete tasks you created or if you are the group owner.');
         }
-        
-        // Store task info for return (before deletion)
+
         const taskInfo = {
             id: task.id,
             title: task.title,
@@ -760,17 +731,16 @@ export const deleteTask = async (taskId, userId) => {
 
         const { deleteDrawingsForTask } = await import('./TaskDrawing.js');
         await deleteDrawingsForTask(taskId);
-        
-        // Delete the task
+
         const deleteQuery = 'DELETE FROM tasks WHERE id = $1';
         await pool.query(deleteQuery, [taskId]);
-        
+
         return {
             success: true,
             message: 'Task deleted successfully',
             deleted_task: taskInfo
         };
-        
+
     } catch (error) {
         console.error('Error deleting task:', error);
         throw error;
@@ -792,7 +762,7 @@ export const updateTaskStatus = async (taskId, userId, nextStatus) => {
         }
 
         const taskQuery = `
-            SELECT 
+            SELECT
                 t.*,
                 g.name as group_name
             FROM tasks t
@@ -808,7 +778,7 @@ export const updateTaskStatus = async (taskId, userId, nextStatus) => {
         const task = taskResult.rows[0];
 
         const membershipQuery = `
-            SELECT user_id FROM group_members 
+            SELECT user_id FROM group_members
             WHERE group_id = $1 AND user_id = $2
         `;
         const membershipResult = await pool.query(membershipQuery, [task.group_id, userId]);

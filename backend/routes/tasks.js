@@ -1,11 +1,11 @@
 import express from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { 
-    createTask, 
-    findTaskById, 
-    getTasksByGroup, 
-    updateTask, 
-    deleteTask, 
+import {
+    createTask,
+    findTaskById,
+    getTasksByGroup,
+    updateTask,
+    deleteTask,
     toggleTaskCompletion,
     updateTaskStatus,
     getTasksAssignedToUser
@@ -58,7 +58,6 @@ router.post('/', requireAuth, async (req, res) => {
         const { group_id, title, description, due_date, assigned_to, priority } = req.body;
         const createdBy = req.userId;
 
-        // Validate required fields
         if (!group_id) {
             return res.status(400).json({
                 success: false,
@@ -91,8 +90,7 @@ router.post('/', requireAuth, async (req, res) => {
 
     } catch (error) {
         console.error('Error creating task:', error);
-        
-        // Handle specific error types
+
         let statusCode = 400;
         if (error.message.includes('not found') || error.message.includes('does not exist')) {
             statusCode = 404;
@@ -629,7 +627,6 @@ router.get('/:id', requireAuth, async (req, res) => {
         const taskId = parseInt(req.params.id);
         const userId = req.userId;
 
-        // Validate task ID
         if (isNaN(taskId) || taskId <= 0) {
             return res.status(400).json({
                 success: false,
@@ -637,9 +634,8 @@ router.get('/:id', requireAuth, async (req, res) => {
             });
         }
 
-        // Get the task
         const task = await findTaskById(taskId);
-        
+
         if (!task) {
             return res.status(404).json({
                 success: false,
@@ -649,7 +645,6 @@ router.get('/:id', requireAuth, async (req, res) => {
 
         // TODO: Add group membership check here
         // For now, we'll trust that findTaskById includes the check
-        
         res.json({
             success: true,
             data: {
@@ -672,7 +667,6 @@ router.put('/:id', requireAuth, async (req, res) => {
         const userId = req.userId;
         const { title, description, due_date, assigned_to, priority } = req.body;
 
-        // Validate task ID
         if (isNaN(taskId) || taskId <= 0) {
             return res.status(400).json({
                 success: false,
@@ -696,7 +690,6 @@ router.put('/:id', requireAuth, async (req, res) => {
 
         const existingTask = assigned_to !== undefined ? await findTaskById(taskId) : null;
 
-        // Update the task
         const updatedTask = await updateTask(taskId, userId, updateData);
 
         if (
@@ -726,8 +719,7 @@ router.put('/:id', requireAuth, async (req, res) => {
 
     } catch (error) {
         console.error('Error updating task:', error);
-        
-        // Handle specific error types
+
         let statusCode = 400;
         if (error.message.includes('not found')) {
             statusCode = 404;
@@ -747,7 +739,6 @@ router.delete('/:id', requireAuth, async (req, res) => {
         const taskId = parseInt(req.params.id);
         const userId = req.userId;
 
-        // Validate task ID
         if (isNaN(taskId) || taskId <= 0) {
             return res.status(400).json({
                 success: false,
@@ -755,7 +746,6 @@ router.delete('/:id', requireAuth, async (req, res) => {
             });
         }
 
-        // Delete the task
         const result = await deleteTask(taskId, userId);
 
         emitTaskDeleted(result.deleted_task.group_id, taskId);
@@ -770,8 +760,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
     } catch (error) {
         console.error('Error deleting task:', error);
-        
-        // Handle specific error types
+
         let statusCode = 400;
         if (error.message.includes('not found')) {
             statusCode = 404;
@@ -820,9 +809,9 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
             dueTo,
             overdueOnly
         } = req.query;
-        
+
         const options = {};
-        
+
         if (completed === 'true') {
             options.completedOnly = true;
         } else if (completed === 'false') {
@@ -858,11 +847,11 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
         } else if (assignedTo) {
             options.assignedTo = assignedTo;
         }
-        
+
         if (sortBy) {
             options.sortBy = sortBy;
         }
-        
+
         if (sortOrder) {
             options.sortOrder = sortOrder.toUpperCase();
         }
@@ -876,7 +865,7 @@ router.get('/group/:groupId', requireAuth, async (req, res) => {
 
     } catch (error) {
         console.error('Error fetching group tasks:', error);
-        
+
         let statusCode = 400;
         if (error.message.includes('not found')) {
             statusCode = 404;
@@ -939,7 +928,6 @@ router.patch('/:id/toggle', requireAuth, async (req, res) => {
         const taskId = parseInt(req.params.id);
         const userId = req.userId;
 
-        // Validate task ID
         if (isNaN(taskId) || taskId <= 0) {
             return res.status(400).json({
                 success: false,
@@ -947,7 +935,6 @@ router.patch('/:id/toggle', requireAuth, async (req, res) => {
             });
         }
 
-        // Toggle task completion
         const result = await toggleTaskCompletion(taskId, userId);
 
         emitTaskToggled(result.task.group_id, result.task);
@@ -963,8 +950,7 @@ router.patch('/:id/toggle', requireAuth, async (req, res) => {
 
     } catch (error) {
         console.error('Error toggling task completion:', error);
-        
-        // Handle specific error types
+
         let statusCode = 400;
         if (error.message.includes('not found')) {
             statusCode = 404;

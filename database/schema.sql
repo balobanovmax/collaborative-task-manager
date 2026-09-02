@@ -13,7 +13,7 @@ CREATE TABLE groups (
     name VARCHAR(100) NOT NULL,
     owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     is_public BOOLEAN DEFAULT false,
-    join_password_hash VARCHAR(255), -- hashed password for private groups
+    join_password_hash VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     description TEXT
 );
